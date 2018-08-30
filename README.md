@@ -5,7 +5,7 @@ ubx-v2x is a simulation model of a baseband 802.11p transceiver which can be use
 
 ## Introduction
 
-The goal of ubx-v2x is to stimulate research on V2X communications algorithms for current and next-generation systems. 
+The goal of ubx-v2x is to stimulate research on algorithms for current and next-generation V2X communications systems. 
 
 ## Quick Start
 
@@ -16,11 +16,11 @@ Use `batch_sim` to initiate a Monte-Carlo simulation which goes through MCS 0-7 
   <p>Example PER vs SNR results.</p>
 </div>
 
-## MEX Acceleration
+## MEX Acceleration (optional)
 
-Simulation performance can be significantly improved by using compiled MEX files for the high-level transmitter `sim_tx` and receiver `sim_rx` functions. These functions and the ones called by them have been written in a way which enables code generation.
+Simulation performance can be significantly improved by using (compiled) MEX files for the high-level transmitter `sim_tx` and receiver `sim_rx` functions. These functions and the ones below them have been written in a way which enables code generation as described [here](https://www.mathworks.com/help/comm/ug/code-generation-from-matlab.html).
 
-Compilation for your platform can be performed by executing `codegen_script` from the top-level directory. Once the MEX files are created inside the `mex` folder, MEX-acceleration can be enabled by setting `SIM.use_mex = true;` at the top of `batch_sim`.
+Compilation of the MEX files for your platform can be performed by executing `codegen_script` from the top-level directory. Once the MEX files are created inside the `mex` folder, MEX-acceleration can be enabled by setting `SIM.use_mex = true;` at the top of `batch_sim`.
 
 ## Requirements
 
@@ -36,6 +36,19 @@ A supported compiler is also needed for MEX acceleration, as specified [here] (h
 ## License
 
 See [LICENSE](https://github.com/u-blox/ubx-v2x/blob/master/LICENSE.md) for the terms associated with this release.
+
+## Citing ubx-v2x
+
+If you use ubx-v2x in your research, please use the following BibTeX entry.
+
+```
+@misc{ubx-v2x,
+  author =       {Ioannis Sarris},
+  title =        {ubx-v2x},
+  howpublished = {\url{https://github.com//u-blox//ubx-v2x}},
+  year =         {2018}
+}
+```
 
 ## References
 
