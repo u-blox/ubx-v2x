@@ -31,7 +31,7 @@ ubx-v2x requires the following software from The MathWorks, Inc.
 - Communications System Toolbox
 - MATLAB Coder (optional, for MEX generation only)
 
-A supported compiler is also needed for MEX acceleration, as specified [here] (https://www.mathworks.com/support/compilers.html).
+A supported compiler is also needed for MEX acceleration, as specified [here](https://www.mathworks.com/support/compilers.html).
 
 ## License
 
