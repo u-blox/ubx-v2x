@@ -5,7 +5,7 @@ ubx-v2x is a simulation model of a baseband 802.11p transceiver which can be use
 
 ## Introduction
 
-The goal of ubx-v2x is to stimulate research on algorithms for current and next-generation V2X communications systems. The main advantage of this model compared to existing 802.11 implementations is the provision for a channel tracking mechanism, a crucial part for investigating high-mobility scenarios.
+The goal of ubx-v2x is to stimulate research on algorithms for current and next-generation V2X communications systems. The main advantage of this model compared to existing 802.11 implementations is the provision of a channel tracking mechanism which is crucial in investigating high-mobility scenarios.
 
 ## Quick Start
 
@@ -13,7 +13,7 @@ Use `batch_sim` to initiate a Monte-Carlo simulation which goes through MCS 0-7 
 
 <div align="center">
   <img src="figures/PER_300B_AWGN.png" />
-  <p>Example PER vs SNR results.</p>
+  <p>Example PER vs SNR results for an AWGN channel.</p>
 </div>
 
 ## MEX Acceleration (optional)
