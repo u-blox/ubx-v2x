@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of tx_phy_params</title>
+  <meta name="keywords" content="tx_phy_params">
+  <meta name="description" content="TX_PHY_PARAMS Initializes PHY layer parameters">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">functions</a> &gt; tx_phy_params.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for functions&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>tx_phy_params
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>TX_PHY_PARAMS Initializes PHY layer parameters</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [PHY, data_msg] = tx_phy_params(mcs, payload_len) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">TX_PHY_PARAMS Initializes PHY layer parameters
+
+   Author: Ioannis Sarris, u-blox
+   email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 30-August-2018</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="crc32.html" class="code" title="function out = crc32(in)">crc32</a>	CRC32 Appends CRC32 on an input bitstream</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="sim_tx.html" class="code" title="function [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(mcs, payload_len)">sim_tx</a>	SIM_RX High-level transmitter function</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [PHY, data_msg] = tx_phy_params(mcs, payload_len)</a>
+0002 <span class="comment">%TX_PHY_PARAMS Initializes PHY layer parameters</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Author: Ioannis Sarris, u-blox</span>
+0005 <span class="comment">%   email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 30-August-2018</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">% Store MCS / payload length</span>
+0027 PHY.mcs     = mcs;
+0028 PHY.length  = payload_len;
+0029 
+0030 <span class="comment">% Initialize scrambler with a 7-bit non-allzero PN sequence (random or pre-set)</span>
+0031 PHY.pn_seq = logical(de2bi(randi([1 127]), 7, <span class="string">'left-msb'</span>))';
+0032 
+0033 <span class="comment">% Pilot subcarrier indices and values</span>
+0034 PHY.pilot_idx = [-21 -7 7 21].' + 33;
+0035 PHY.pilot_val = [1 1 1 -1].';
+0036 
+0037 <span class="comment">% Polarity signs to use for pilots</span>
+0038 PHY.polarity_sign = [1,1,1,1,-1,-1,-1,1,-1,-1,-1,-1,1,1,-1,1,-1,-1,1,1,-1,1,1,-1,1,1,1,1,1,1,-1,1,1,1,-1,1,1,-1,-1,1,1,1, <span class="keyword">...</span>
+0039     -1,1,-1,-1,-1,1,-1,1,-1,-1,1,-1,-1,1,1,1,1,1,-1,-1,1,1,-1,-1,1,-1,1,-1,1,1,-1,-1,-1,1,1,-1,-1,-1,-1,1,-1,-1,1, <span class="keyword">...</span>
+0040     -1,1,1,1,1,-1,1,-1,1,-1,1,-1,-1,-1,-1,-1,1,-1,1,1,-1,1,-1,1,1,1,-1,-1,1,-1,-1,-1,1,1,1,-1,-1,-1,-1,-1,-1,-1].';
+0041 
+0042 <span class="comment">% Starting index for pilot polarity index</span>
+0043 PHY.pilot_offset = 1;
+0044 
+0045 <span class="comment">% Data subcarrier indices</span>
+0046 PHY.data_idx = [-26:-22 -20:-8 -6:-1 1:6 8:20 22:26].' + 33;
+0047 
+0048 <span class="comment">% Number of data subcarriers</span>
+0049 PHY.n_sd = 48;
+0050 
+0051 <span class="comment">% MCS tables for coding rate (numerator / denominator) and bits per modulation symbol</span>
+0052 rate_num = [1 3 1 3 1 3 2 3];
+0053 rate_denom = [2 4 2 4 2 4 3 4];
+0054 n_bpscs = [1 1 2 2 4 4 6 6];
+0055 
+0056 <span class="comment">% Find code rate numerator/denominator &amp; bits per modulation symbol</span>
+0057 PHY.r_num   = rate_num(mcs + 1);
+0058 PHY.r_denom = rate_denom(mcs + 1);
+0059 PHY.n_bpscs = n_bpscs(mcs + 1);
+0060 
+0061 <span class="comment">% Calculate coded/uncoded number of bits per OFDM symbol</span>
+0062 PHY.n_cbps  = 48*n_bpscs(mcs + 1);
+0063 PHY.n_dbps  = 48*n_bpscs(mcs + 1)*rate_num(mcs + 1)/rate_denom(mcs + 1);
+0064 
+0065 <span class="comment">% Calculate number of OFDM symbols</span>
+0066 PHY.n_sym = ceil((16 + 8*payload_len + 6)/(48*n_bpscs(mcs + 1)*rate_num(mcs + 1)/rate_denom(mcs + 1)));
+0067 
+0068 <span class="comment">% Create pseudo-random PSDU binary message (account for CRC-32)</span>
+0069 tmp_msg = randi([0 255], payload_len - 4, 1)'; 
+0070 
+0071 <span class="comment">% Calculate CRC-32</span>
+0072 data_msg_crc = <a href="crc32.html" class="code" title="function out = crc32(in)">crc32</a>(tmp_msg);
+0073 
+0074 <span class="comment">% Convert byte to binary data</span>
+0075 data_msg = logical(de2bi(data_msg_crc, 8))';
+0076 data_msg = data_msg(:);
+0077 
+0078 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 03-Sep-2018 16:17:14 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>
