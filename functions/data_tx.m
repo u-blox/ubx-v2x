@@ -87,10 +87,10 @@ for i_sym = 0:PHY.n_sym - 1
     data_f = complex(zeros(64, 1));
     
     % Insert pilots with correct polarity
-    data_f(PHY.pilot_idx, :) = PHY.polarity_sign(mod(i_sym + PHY.pilot_offset, 127) + 1)*PHY.pilot_val(1:4, :);
+    data_f(PHY.pilot_idx, 1) = PHY.polarity_sign(mod(i_sym + PHY.pilot_offset, 127) + 1)*PHY.pilot_val(1:4, :);
     
     % Insert modulated data into f-domain data symbol
-    data_f(PHY.data_idx, :) = mapper_tx(interlvr_out, PHY.n_bpscs);
+    data_f(PHY.data_idx, 1) = mapper_tx(interlvr_out, PHY.n_bpscs);
     
     % Perform IFFT & normalize
     temp_wf = 1/sqrt(PHY.n_sd + 4)*dot11_ifft(data_f, 64);
