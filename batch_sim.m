@@ -28,7 +28,7 @@ clc
 clear
 close all
 
-addpath('./functions;./mex')
+addpath('./functions;./mex;./rsfunctions')
 
 % Set random number generator to specific seed
 rand_stream = RandStream('mt19937ar', 'Seed', 0);
@@ -47,10 +47,19 @@ SIM.use_mex         = false;    % Use MEX functions to accelerate simulation
 SIM.n_iter          = 1000;     % Number of Monte-Carlo iterations
 SIM.max_error       = 100;      % Number of packet errors before moving to next SNR point
 SIM.min_error       = .005;     % Minimum PER target, beyond which, loop moves to next SNR point
+SIM.rs_enabled      = false;    % Enable/disable outer R-S encoder
 
 % Channel model settings
 SIM.channel_model   = 0;        % Channel model (0: AWGN, 1-5: C2C models R-LOS, UA-LOS, C-NLOS, H-LOS or H-NLOS)
 SIM.snr             = 0:.5:25;  % Scalar or vector containing SNR values (dB)
+
+% Reed Solomon configuration
+N = 255;
+K = 239;
+S = 239;
+
+% Initialize RS encoder/decoder objects
+[rsEncoder, rsDecoder] = rsObjInit(N, K, S, 8);
 
 tic
 
@@ -84,12 +93,8 @@ for i_mcs = 1:length(SIM.mcs_vec)
             % Fix random seed to allow reproduceability
             reset(rand_stream, i_iter);
             
-            % Transmitter model (MEX or M)
-            if SIM.use_mex
-                [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx_mex(SIM.mcs, SIM.payload_len);
-            else
-                [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(SIM.mcs, SIM.payload_len);
-            end
+            % Transmitter model
+            [tx_wf, data_f_mtx, data_msg_crc, tx_parity_bytes, PHY] = sim_tx(SIM.mcs, SIM.payload_len, SIM.rs_enabled, rsEncoder);
             
             % Append silence samples at the beginning/end of useful waveform
             s0_len = randi([100 200]);
@@ -106,12 +111,8 @@ for i_mcs = 1:length(SIM.mcs_vec)
             % Add AWGN noise
             rx_wf = awgn(rx_wf, SIM.snr(i_snr));
             
-            % Receiver model (MEX or M)
-            if SIM.use_mex
-                err = sim_rx_mex(PHY, rx_wf, s0_len, data_f_mtx, SIM.h_delay, SIM.t_depth, SIM.pdet_thold);
-            else
-                err = sim_rx(PHY, rx_wf, s0_len, data_f_mtx, SIM.h_delay, SIM.t_depth, SIM.pdet_thold);
-            end
+            % Receiver model
+            err = sim_rx(PHY, rx_wf, s0_len, data_f_mtx, SIM.h_delay, SIM.t_depth, SIM.pdet_thold, rsDecoder, SIM.rs_enabled);
             
             % Display debugging information
             switch err
@@ -123,6 +124,9 @@ for i_mcs = 1:length(SIM.mcs_vec)
                     fprintf('o'); % SIG error
                 case 3
                     fprintf('!'); % DATA error
+                case 4
+                    fprintf('r'); % Recovered DATA error
+                    err = 0;
             end
             
             % Store PER in array

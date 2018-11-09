@@ -43,16 +43,16 @@ end
 pn_state = flipud(PHY.pn_seq);
 
 % Mark the tail bits so that they can be nulled after scrambling
-padding_vec = [true(16 + PHY.length*8, 1); false(6, 1); true(pad_len, 1)];
+padding_vec = [true(16 + PHY.length*8, 1); false(6, 1); true(pad_len, 1); true(PHY.n_bytes_parity*8, 1); true(PHY.pad_len_parity, 1)];
 
 % Initialize time-domain waveform output
-data_wf = complex(zeros(PHY.n_sym*80, 1));
+data_wf = complex(zeros((PHY.n_sym + PHY.n_sym_parity)*80, 1));
 
 % Initialize frequency-domain output
-data_f_mtx = complex(zeros(64, PHY.n_sym));
+data_f_mtx = complex(zeros(64, PHY.n_sym + PHY.n_sym_parity));
 
 % Loop for each OFDM symbol
-for i_sym = 0:PHY.n_sym - 1
+for i_sym = 0:(PHY.n_sym + PHY.n_sym_parity - 1)
     
     % Index of bits into scrambler per OFDM symbol
     idx0 = i_sym*PHY.n_dbps + 1;

@@ -1,4 +1,5 @@
-function err = sim_rx(PHY, rx_wf, s0_len, data_f_mtx, h_delay, t_depth, pdet_thold)
+function err = sim_rx(PHY, rx_wf, s0_len, data_f_mtx, h_delay, t_depth, pdet_thold, rsDecoder, rs_enabled)
+
 %SIM_RX High-level receiver function
 %
 %   Author: Ioannis Sarris, u-blox
@@ -72,6 +73,29 @@ else
             % Check CRC for errors
             if (any(pld_crc32(len - 3:len) ~= pld_bytes(len - 3:len)'))
                 err = 3;
+            end
+            
+            % On CRC error check RS parity and try to recover errors
+            if ((err == 3) && rs_enabled)
+                
+                % Calculate number of required pad bits
+                pad_len = PHY.n_sym*PHY.n_dbps - (16 + 8*PHY.length + 6);
+
+                % Extract parity bytes from received data
+                idx0 = 16 + len*8 + pad_len;
+                idx1 = idx0 + PHY.n_bytes_parity*8 - 1;
+                rx_parity_bytes = bi2de(reshape(rx_out(idx0:idx1), 8, PHY.n_bytes_parity)');
+                
+                % RS decoding
+                RSrxbytes = RSDecodePacket(rsDecoder, pld_bytes, rx_parity_bytes);
+                
+                % Calculate CRC-32 (again)
+                pld_crc32 = crc32(RSrxbytes(1:len - 4)');
+                
+                % Check CRC for errors (again)
+                if (all(pld_crc32(len - 3:len) == RSrxbytes(len - 3:len)'))
+                    err = 4;
+                end
             end
         else
             err = 2;

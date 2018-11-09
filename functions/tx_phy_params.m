@@ -1,4 +1,4 @@
-function [PHY, data_msg] = tx_phy_params(mcs, payload_len)
+function [PHY, data_msg, data_msg_crc] = tx_phy_params(mcs, payload_len)
 %TX_PHY_PARAMS Initializes PHY layer parameters
 %
 %   Author: Ioannis Sarris, u-blox
