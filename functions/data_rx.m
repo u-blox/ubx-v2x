@@ -3,7 +3,7 @@ function descr_msg = data_rx(PHY, SIG_CFG, rx_wf, idx, h_est, data_f_mtx, h_dela
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 30-August-2018
+%   August 2018; Last revision: 09-November-2018
 
 % Copyright (C) u-blox
 %
@@ -60,7 +60,7 @@ for i_sym = 1:SIG_CFG.n_sym
     x_p = pol_sign*y(PHY.pilot_idx, 1)./h_est(PHY.pilot_idx, 1).*[1 1 1 -1].'*exp(-1j*r_cfo);
     
     % Residual CFO estimation
-    r_cfo = r_cfo + mean(angle(x_p));
+    r_cfo = (r_cfo + mean(angle(x_p)))/2;
     
     % Data equalization with CFO compensation
     sym_out = y(PHY.data_idx, 1)./h_est(PHY.data_idx, 1)*exp(-1j*r_cfo);
