@@ -30,7 +30,8 @@ if (channel_model == 0)
 end
 
 % C2C models' names
-Channels_Name = {'R-LOS' 'UA-LOS' 'C-NLOS' 'H-LOS' 'H-NLOS'};
+Channels_Name = {'R-LOS' 'UA-LOS' 'C-NLOS' 'H-LOS' 'H-NLOS', ...
+    'R-LOS-ENH' 'UA-LOS-ENH' 'C-NLOS-ENH' 'H-LOS-ENH' 'H-NLOS-ENH'};
 
 % Get channel model PDP, p_dB in dB, tau in sec, dpl_shft in Hz.
 switch Channels_Name{channel_model}
@@ -54,6 +55,26 @@ switch Channels_Name{channel_model}
         p_dB = [0 -2 -5 -7];
         tau = [0 200 433 700]*1e-9;
         dpl_shft = [0 689 -492 886];
+    case 'R-LOS-ENH'
+        p_dB = [0 -12 -15];
+        tau = [0 84 183]*1e-9;
+        dpl_shft = [0 94 -1176];
+    case 'UA-LOS-ENH'
+        p_dB = [0 -11 -13 -15];
+        tau = [0 222 334 533]*1e-9;
+        dpl_shft = [0 224 1173 588];
+    case 'C-NLOS-ENH'
+        p_dB = [0 -3 -4 -7 -15];
+        tau = [0 220 266 475 630]*1e-9;
+        dpl_shft = [0 -142 -542 -155 320];
+    case 'H-LOS-ENH'
+        p_dB = [0 -11 -13 -17];
+        tau = [0 167 433 600]*1e-9;
+        dpl_shft = [0 1941 -1176 -391];
+    case 'H-NLOS-ENH'
+        p_dB = [0 -2 -5 -7 -15];
+        tau = [0 100 500 867 1152]*1e-9;
+        dpl_shft = [0 50 1157 -2352 1573];
 end
 
 % Doppler spectrum
