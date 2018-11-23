@@ -49,7 +49,8 @@ SIM.max_error       = 100;      % Number of packet errors before moving to next 
 SIM.min_error       = .005;     % Minimum PER target, beyond which, loop moves to next SNR point
 
 % Channel model settings
-SIM.channel_model   = 0;        % Channel model (0: AWGN, 1-5: C2C models R-LOS, UA-LOS, C-NLOS, H-LOS or H-NLOS)
+SIM.channel_model   = 0;        % Channel model (0: AWGN, 1-5: C2C models R-LOS, UA-LOS, C-NLOS, H-LOS and H-NLOS,
+                                % 6-10: Enhanced C2C models R-LOS-ENH, UA-LOS-ENH, C-NLOS-ENH, H-LOS-ENH and H-NLOS-ENH)
 SIM.snr             = 0:.5:25;  % Scalar or vector containing SNR values (dB)
 
 tic
