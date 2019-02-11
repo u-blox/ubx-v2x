@@ -3,7 +3,7 @@
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 30-August-2018
+%   August 2018; Last revision: 11-February-2019
 
 % Copyright (C) u-blox
 %
@@ -39,7 +39,6 @@ RandStream.setGlobalStream(rand_stream);
 SIM.mcs_vec         = 0:7;      % Scalar or vector containing MCS values (0...7)
 SIM.payload_len     = 300;      % PHY payload length (bytes)
 SIM.pdet_thold      = 20;       % Packet detection threshold
-SIM.h_delay         = 3;        % Channel tracking delay (OFDM symbols)
 SIM.t_depth         = 2;        % Channel tracking time depth averaging (OFDM symbols)
 
 % Simulation settings
@@ -50,8 +49,9 @@ SIM.min_error       = .005;     % Minimum PER target, beyond which, loop moves t
 
 % Channel model settings
 SIM.channel_model   = 0;        % Channel model (0: AWGN, 1-5: C2C models R-LOS, UA-LOS, C-NLOS, H-LOS and H-NLOS,
-                                % 6-10: Enhanced C2C models R-LOS-ENH, UA-LOS-ENH, C-NLOS-ENH, H-LOS-ENH and H-NLOS-ENH)
+% 6-10: Enhanced C2C models R-LOS-ENH, UA-LOS-ENH, C-NLOS-ENH, H-LOS-ENH and H-NLOS-ENH)
 SIM.snr             = 0:.5:25;  % Scalar or vector containing SNR values (dB)
+SIM.ovs             = 1; 		% Oversampling factor
 
 tic
 
@@ -62,7 +62,7 @@ for i_mcs = 1:length(SIM.mcs_vec)
     SIM.mcs = SIM.mcs_vec(i_mcs);
     
     % Initialize channel filter object
-    chan_obj = chan_mod_init(SIM.channel_model);
+    chan_obj = chan_mod_init(SIM.channel_model, SIM.ovs);
     
     % Debugging message
     fprintf('\nChannel %i, MCS %i', SIM.channel_model, SIM.mcs);
@@ -92,9 +92,12 @@ for i_mcs = 1:length(SIM.mcs_vec)
                 [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(SIM.mcs, SIM.payload_len);
             end
             
+            % Optional oversampling of the tranmitted waveform
+            [tx_wf, filt_len] = upsample_tx(tx_wf, SIM.ovs);
+            
             % Append silence samples at the beginning/end of useful waveform
             s0_len = randi([100 200]);
-            tx_wf_full = [zeros(s0_len, 1); tx_wf; zeros(100, 1)];
+            tx_wf_full = [zeros(s0_len*SIM.ovs, 1); tx_wf; zeros((300 - s0_len)*SIM.ovs, 1)];
             
             % If channel model is defined, pass transmitted signal through channel filter
             if (SIM.channel_model == 0)
@@ -103,15 +106,18 @@ for i_mcs = 1:length(SIM.mcs_vec)
                 reset(chan_obj);
                 rx_wf = step(chan_obj, tx_wf_full);
             end
-
+            
+            % Optional downsampling of the received waveform
+            rx_wf = downsample_rx(rx_wf, SIM.ovs, filt_len);
+            
             % Add AWGN noise
             rx_wf = awgn(rx_wf, SIM.snr(i_snr));
             
             % Receiver model (MEX or M)
             if SIM.use_mex
-                err = sim_rx_mex(PHY, rx_wf, s0_len, data_f_mtx, SIM.h_delay, SIM.t_depth, SIM.pdet_thold);
+                err = sim_rx_mex(PHY, rx_wf, s0_len, data_f_mtx, SIM.t_depth, SIM.pdet_thold);
             else
-                err = sim_rx(PHY, rx_wf, s0_len, data_f_mtx, SIM.h_delay, SIM.t_depth, SIM.pdet_thold);
+                err = sim_rx(PHY, rx_wf, s0_len, data_f_mtx, SIM.t_depth, SIM.pdet_thold);
             end
             
             % Display debugging information

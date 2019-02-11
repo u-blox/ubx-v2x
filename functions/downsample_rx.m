@@ -1,8 +1,9 @@
-%CODEGEN_SCRIPT - Generates MEX files for acceleration purposes
+function out = downsample_rx(in, ovs, filt_len)
+%UPSAMPLE_TX Downsample received signal by an integer factor
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 11-February-2019
+%   February 2019; Last revision: 11-February-2019
 
 % Copyright (C) u-blox
 %
@@ -22,14 +23,14 @@
 % Project: ubx-v2x
 % Purpose: V2X baseband simulation model
 
-addpath('./functions')
+% Apply downsampling if factor > 1
+if (ovs > 1)
+    out = decimate(in, ovs);
+    
+    % Crop filter delays
+    out = out(filt_len/2/ovs + 1:end);
+else
+    out = in;
+end
 
-tic
-disp('Creating MEX for sim_tx')
-codegen -args {0, 0} sim_tx -o ./mex/sim_tx_mex -config:mex -report
-toc
-
-tic
-disp('Creating MEX for sim_rx')
-codegen -args {PHY, coder.typeof(1j, [inf 1], [1 0]), 0, coder.typeof(1j, [64 1400], [0 1]), 0, 0} sim_rx -o ./mex/sim_rx_mex -config:mex -report
-toc
+end

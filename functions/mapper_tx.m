@@ -56,7 +56,7 @@ switch q
         norm_factor = 7/sqrt(42);
         
     otherwise % Needed for code-generation
-        mod_table = [];
+        mod_table = 0;
         norm_factor = 1;
 end
 

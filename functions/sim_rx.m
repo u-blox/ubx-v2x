@@ -1,4 +1,4 @@
-function err = sim_rx(PHY, rx_wf, s0_len, data_f_mtx, h_delay, t_depth, pdet_thold)
+function err = sim_rx(PHY, rx_wf, s0_len, data_f_mtx, t_depth, pdet_thold)
 %SIM_RX High-level receiver function
 %
 %   Author: Ioannis Sarris, u-blox
@@ -57,7 +57,7 @@ else
         err = 2;
     else
         % Data processing
-        rx_out = data_rx(PHY, SIG_CFG, rx_wf, idx, h_est, data_f_mtx, h_delay, t_depth, r_cfo);
+        rx_out = data_rx(PHY, SIG_CFG, rx_wf, idx, h_est, data_f_mtx, t_depth, r_cfo);
         
         % Check if payload length is correct
         len = PHY.length;

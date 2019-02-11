@@ -1,9 +1,9 @@
-function descr_msg = data_rx(PHY, SIG_CFG, rx_wf, idx, h_est, data_f_mtx, h_delay, t_depth, r_cfo)
+function descr_msg = data_rx(PHY, SIG_CFG, rx_wf, idx, h_est, data_f_mtx, t_depth, r_cfo)
 %DATA_RX Receiver processing of all DATA OFDM symbols
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 09-November-2018
+%   August 2018; Last revision: 11-February-2019
 
 % Copyright (C) u-blox
 %
@@ -25,6 +25,9 @@ function descr_msg = data_rx(PHY, SIG_CFG, rx_wf, idx, h_est, data_f_mtx, h_dela
 
 % Needed for code generation
 coder.varsize('sym_out', [48 1], [0 0]);
+
+% Calculate latency of (fake) channel tracking feedback
+h_delay = ceil(96/PHY.n_dbps) + 1;
 
 % Initialize matrix holding channel estimates for all OFDM symbols
 h_est_mtx = complex(zeros(64, SIG_CFG.n_sym + h_delay));

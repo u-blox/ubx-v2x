@@ -1,9 +1,9 @@
-function h = chan_mod_init(channel_model)
+function h = chan_mod_init(channel_model, ovs)
 %CHAN_MOD_INIT Channel model initialization according to Car-2-Car models
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 30-August-2018
+%   August 2018; Last revision: 11-February-2019
 
 % Copyright (C) u-blox
 %
@@ -77,25 +77,33 @@ switch Channels_Name{channel_model}
         dpl_shft = [0 50 1157 -2352 1573];
 end
 
-% Doppler spectrum
-dopl_spectr = doppler('Jakes');
-
 % Use a very large K-factor for 1st tap (Static - pure Rician), zero for remaining taps (pure Rayleigh)
 RicianFactor = [1e12 zeros(1, length(tau) - 1)];
 
 % Maximum Doppler shift for all paths (identical)
 fd = max(abs(dpl_shft));
 
+% Initialize Doppler spectrum cell
+doppler_spec = cell(size(dpl_shft));
+
+% First tap is static (zero offset)
+doppler_spec{1} = doppler('Asymmetric Jakes', [-.02 .02]);
+
+% Remaining taps follow an Asymmetiric Jakes distribution (or "Half-Bathtub")
+for ii = 2:length(dpl_shft)
+   doppler_spec{ii} = doppler('Asymmetric Jakes', sort([0 dpl_shft(ii)/fd])); 
+end
+
 % Create channel object
 h = comm.RicianChannel (...
     'KFactor',                  RicianFactor, ...
-    'DirectPathDopplerShift', 	dpl_shft, ...
+    'DirectPathDopplerShift', 	zeros(size(RicianFactor)), ...
     'DirectPathInitialPhase', 	zeros(size(RicianFactor)), ...
-    'DopplerSpectrum',          dopl_spectr, ...
-    'SampleRate',               10*1e6,...
-    'PathDelays',               tau,...
-    'AveragePathGains',         p_dB,...
-    'MaximumDopplerShift',      fd...
+    'DopplerSpectrum',          doppler_spec, ...
+    'SampleRate',               ovs*10*1e6, ...
+    'PathDelays',               tau, ...
+    'AveragePathGains',         p_dB, ...
+    'MaximumDopplerShift',      fd ...
     );
 
 end
