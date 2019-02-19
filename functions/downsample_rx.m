@@ -1,5 +1,5 @@
 function out = downsample_rx(in, ovs, filt_len)
-%UPSAMPLE_TX Downsample received signal by an integer factor
+%DOWNSAMPLE_TX Downsample received signal by an integer factor
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com

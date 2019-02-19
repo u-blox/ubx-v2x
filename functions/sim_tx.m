@@ -1,9 +1,9 @@
-function [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(mcs, payload_len)
+function [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(mcs, payload_len, window_en, w_beta)
 %SIM_RX High-level transmitter function
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 30-August-2018
+%   August 2018; Last revision: 19-February-2019
 
 % Copyright (C) u-blox
 %
@@ -27,13 +27,13 @@ function [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(mcs, payload_len)
 [PHY, data_msg] = tx_phy_params(mcs, payload_len);
 
 % Get STF waveform
-stf_wf = stf_tx();
+stf_wf = stf_tx(w_beta);
 
 % Get LTF waveform
-ltf_wf = ltf_tx();
+ltf_wf = ltf_tx(w_beta);
 
 % Get SIG waveform
-sig_wf = sig_tx(PHY);
+sig_wf = sig_tx(PHY, w_beta);
 
 % Calculate number of required pad bits
 pad_len = PHY.n_sym*PHY.n_dbps - (16 + 8*PHY.length + 6);
@@ -42,9 +42,12 @@ pad_len = PHY.n_sym*PHY.n_dbps - (16 + 8*PHY.length + 6);
 padding_out = [false(16, 1); data_msg; false(pad_len + 6, 1)];
 
 % Generate data waveform
-[data_wf, data_f_mtx] = data_tx(PHY, pad_len, padding_out);
+[data_wf, data_f_mtx] = data_tx(PHY, pad_len, padding_out, w_beta);
 
 % Concatenate output waveform
 tx_wf = [stf_wf; ltf_wf; sig_wf; data_wf];
+
+% Apply time-domain windowing
+tx_wf = apply_time_window(tx_wf, window_en);
 
 end

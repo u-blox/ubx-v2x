@@ -1,9 +1,9 @@
-function stf_wf = stf_tx(w_beta)
-%STF_TX Generates STF preamble
+function out = apply_time_window(in, enabled)
+%APPLY_TIME_WINDOW Apply time-domain window to improve spectral shape
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 19-February-2019
+%   February 2019; Last revision: 19-February-2019
 
 % Copyright (C) u-blox
 %
@@ -23,23 +23,20 @@ function stf_wf = stf_tx(w_beta)
 % Project: ubx-v2x
 % Purpose: V2X baseband simulation model
 
-% Store this as a persistent variable to avoid recalculation
-persistent stf_wf_base
+% Default output is equal to input
+out = in;
 
-if isempty(stf_wf_base)
-    % STF f-domain represenation (including DC-subcarrier & guard bands)
-    stf_f = sqrt(1/2)*...
-        [zeros(1,6), 0 0 1+1j 0 0 0 -1-1j 0 0 0 1+1j 0 0 0 -1-1j 0 0 0 -1-1j 0 0 0 1+1j 0 0 0 ...
-        0 0 0 0 -1-1j 0 0 0 -1-1j 0 0 0 1+1j 0 0 0 1+1j 0 0 0 1+1j 0 0 0 1+1j 0 0, zeros(1, 5)].';
+% Apply time-domain windowing
+if enabled
+    % Length of waveform
+    wf_len = length(out);
     
-    % Apply spectral shaping window
-    stf_f = stf_f.*kaiser(64, w_beta);
+    % Half the amplitude on first sample
+    out(1, :) = out(1, :)/2;
     
-    % Base STF waveform
-    stf_wf_base = 1/sqrt(12)*dot11_ifft(stf_f, 64);
-end
-
-% Append CP
-stf_wf = [stf_wf_base(33:64); stf_wf_base; stf_wf_base];
-
+    % OFDM symbol boundary samples
+    idx = 80:80:wf_len - 80;
+    
+    % Perform widnowing on preamble & data fields
+    out(idx + 1, :) = (out(idx + 1, :) + out(idx - 63, :))/2;
 end

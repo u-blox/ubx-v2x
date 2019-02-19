@@ -3,7 +3,7 @@
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 11-February-2019
+%   August 2018; Last revision: 19-February-2019
 
 % Copyright (C) u-blox
 %
@@ -35,37 +35,43 @@ rand_stream = RandStream('mt19937ar', 'Seed', 0);
 RandStream.setGlobalStream(rand_stream);
 
 %% Simulation Parameters
-% Transceiver parameters
+% Simulation parameters
 SIM.mcs_vec         = 0:7;      % Scalar or vector containing MCS values (0...7)
-SIM.payload_len     = 300;      % PHY payload length (bytes)
-SIM.pdet_thold      = 20;       % Packet detection threshold
-SIM.t_depth         = 2;        % Channel tracking time depth averaging (OFDM symbols)
-
-% Simulation settings
+SIM.snr             = 0:.5:25;  % Scalar or vector containing SNR values (dB)
+SIM.ovs             = 1; 		% Oversampling factor
+SIM.channel_model   = 0;        % Channel model (0: AWGN, 1-5: C2C models R-LOS, UA-LOS, C-NLOS, H-LOS and H-NLOS, 6-10: Enhanced C2C models R-LOS-ENH, UA-LOS-ENH, C-NLOS-ENH, H-LOS-ENH and H-NLOS-ENH)
 SIM.use_mex         = false;    % Use MEX functions to accelerate simulation
 SIM.n_iter          = 1000;     % Number of Monte-Carlo iterations
 SIM.max_error       = 100;      % Number of packet errors before moving to next SNR point
 SIM.min_error       = .005;     % Minimum PER target, beyond which, loop moves to next SNR point
+SIM.check_sp        = false;    % Plot Tx spectrum and check for compliance
 
-% Channel model settings
-SIM.channel_model   = 0;        % Channel model (0: AWGN, 1-5: C2C models R-LOS, UA-LOS, C-NLOS, H-LOS and H-NLOS,
-% 6-10: Enhanced C2C models R-LOS-ENH, UA-LOS-ENH, C-NLOS-ENH, H-LOS-ENH and H-NLOS-ENH)
-SIM.snr             = 0:.5:25;  % Scalar or vector containing SNR values (dB)
-SIM.ovs             = 1; 		% Oversampling factor
+% Transmitter parameters
+TX.payload_len      = 300;      % PHY payload length (bytes)
+TX.window_en        = false;    % Apply time-domain windowing
+TX.w_beta           = 0;        % Kaiser window beta coefficient for spectral shaping (0: disabled)
+TX.pa_enable        = false;    % Apply PA non-linearity model
+TX.pn_en            = false;    % Model Tx phase noise
+
+% Receiver parameters
+RX.pdet_thold       = 20;       % Packet detection threshold
+RX.t_depth          = 2;        % Channel tracking time depth averaging (OFDM symbols)
+RX.pn_en            = false;    % Model Rx phase noise
 
 tic
 
 %% Loop for MCS values
+avgTHR = zeros(length(SIM.snr), length(SIM.mcs_vec));
 for i_mcs = 1:length(SIM.mcs_vec)
     
     % Current MCS value
-    SIM.mcs = SIM.mcs_vec(i_mcs);
+    TX.mcs = SIM.mcs_vec(i_mcs);
     
     % Initialize channel filter object
     chan_obj = chan_mod_init(SIM.channel_model, SIM.ovs);
     
     % Debugging message
-    fprintf('\nChannel %i, MCS %i', SIM.channel_model, SIM.mcs);
+    fprintf('\nChannel %i, MCS %i', SIM.channel_model, TX.mcs);
     
     %% Loop for SNR values
     BER = zeros(length(SIM.snr), SIM.n_iter);
@@ -87,13 +93,22 @@ for i_mcs = 1:length(SIM.mcs_vec)
             
             % Transmitter model (MEX or M)
             if SIM.use_mex
-                [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx_mex(SIM.mcs, SIM.payload_len);
+                [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx_mex(TX.mcs, TX.payload_len, TX.window_en, TX.w_beta);
             else
-                [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(SIM.mcs, SIM.payload_len);
+                [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(TX.mcs, TX.payload_len, TX.window_en, TX.w_beta);
             end
             
+            % Apply Tx phase noise
+            tx_wf = add_tx_pn(tx_wf, TX.pn_en);
+            
             % Optional oversampling of the tranmitted waveform
-            [tx_wf, filt_len] = upsample_tx(tx_wf, SIM.ovs);
+            [tx_wf, ovs_filt_len] = upsample_tx(tx_wf, SIM.ovs);
+            
+            % Apply a memoryless nonlinearity model of the power amplifier
+            tx_wf = pa_model(tx_wf, TX.pa_enable);
+            
+            % Evaluate the PSD and check for compliance
+            check_sp_mask(tx_wf, ovs_filt_len, PHY.n_sym, SIM.ovs, SIM.check_sp);
             
             % Append silence samples at the beginning/end of useful waveform
             s0_len = randi([100 200]);
@@ -108,16 +123,19 @@ for i_mcs = 1:length(SIM.mcs_vec)
             end
             
             % Optional downsampling of the received waveform
-            rx_wf = downsample_rx(rx_wf, SIM.ovs, filt_len);
+            rx_wf = downsample_rx(rx_wf, SIM.ovs, ovs_filt_len);
+            
+            % Apply Rx phase noise
+            rx_wf = add_rx_pn(rx_wf, RX.pn_en);
             
             % Add AWGN noise
             rx_wf = awgn(rx_wf, SIM.snr(i_snr));
             
             % Receiver model (MEX or M)
             if SIM.use_mex
-                err = sim_rx_mex(PHY, rx_wf, s0_len, data_f_mtx, SIM.t_depth, SIM.pdet_thold);
+                err = sim_rx_mex(PHY, rx_wf, s0_len, data_f_mtx, RX.t_depth, RX.pdet_thold);
             else
-                err = sim_rx(PHY, rx_wf, s0_len, data_f_mtx, SIM.t_depth, SIM.pdet_thold);
+                err = sim_rx(PHY, rx_wf, s0_len, data_f_mtx, RX.t_depth, RX.pdet_thold);
             end
             
             % Display debugging information
@@ -153,10 +171,20 @@ for i_mcs = 1:length(SIM.mcs_vec)
         end
     end
     
-    % Plot PER
     figure(SIM.channel_model + 1);
-    semilogy(SIM.snr, avgPER, 'DisplayName', ['MCS' num2str(SIM.mcs)]);
+    
+    % Plot PER
+    subplot(1, 2, 1)
+    semilogy(SIM.snr, avgPER, 'DisplayName', ['MCS' num2str(TX.mcs)]);
     drawnow; xlabel('SNR (dB)'); ylabel('PER');
+    grid on; legend; hold on;
+    
+    % Plot throughput
+    subplot(1, 2, 2)
+    drate = 48.*PHY.n_dbps./PHY.n_cbps.*PHY.n_bpscs/8e-6*1e-6;
+    avgTHR(:, i_mcs) = (1 - avgPER).*repmat(drate, size(avgPER, 1), 1);
+    plot(SIM.snr, avgTHR(:, i_mcs), 'DisplayName', ['MCS' num2str(TX.mcs)]);
+    drawnow; xlabel('SNR (dB)'); ylabel('Throughput (Mbps)');
     grid on; legend; hold on;
 end
 

@@ -2,7 +2,7 @@
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 11-February-2019
+%   August 2018; Last revision: 19-February-2019
 
 % Copyright (C) u-blox
 %
@@ -26,7 +26,7 @@ addpath('./functions')
 
 tic
 disp('Creating MEX for sim_tx')
-codegen -args {0, 0} sim_tx -o ./mex/sim_tx_mex -config:mex -report
+codegen -args {0, 0, true, 0} sim_tx -o ./mex/sim_tx_mex -config:mex -report
 toc
 
 tic

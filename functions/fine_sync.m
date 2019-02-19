@@ -3,7 +3,7 @@ function [f_idx, f_cfo] = fine_sync(in, c_idx)
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 30-August-2018
+%   August 2018; Last revision: 19-February-2019
 
 % Copyright (C) u-blox
 %
@@ -24,7 +24,7 @@ function [f_idx, f_cfo] = fine_sync(in, c_idx)
 % Purpose: V2X baseband simulation model
 
 % Obtain original LTF waveform
-ltf_wf = ltf_tx();
+ltf_wf = ltf_tx(0);
 
 % Input LTF signal
 xc_in = in(c_idx + 160:c_idx + 223);

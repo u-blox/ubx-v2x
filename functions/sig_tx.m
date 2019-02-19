@@ -1,9 +1,9 @@
-function [sig_wf, sig_mod] = sig_tx(PHY)
+function [sig_wf, sig_mod] = sig_tx(PHY, w_beta)
 %SIG_TX SIG message transmitter/parser
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 30-August-2018
+%   August 2018; Last revision: 19-February-2019
 
 % Copyright (C) u-blox
 %
@@ -86,6 +86,9 @@ sig_sp(PHY.data_idx) = sig_mod;
 
 % Append pilots
 sig_sp(PHY.pilot_idx) = PHY.pilot_val;
+
+% Apply spectral shaping window
+sig_sp = sig_sp.*kaiser(64, w_beta);
 
 % Time-domain SIG waveform
 sig_wf_base = 1/sqrt(52)*dot11_ifft(sig_sp, 64);

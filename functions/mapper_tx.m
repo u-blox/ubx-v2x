@@ -3,7 +3,7 @@ function out = mapper_tx(in, q)
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 30-August-2018
+%   August 2018; Last revision: 19-February-2019
 
 % Copyright (C) u-blox
 %
@@ -56,7 +56,7 @@ switch q
         norm_factor = 7/sqrt(42);
         
     otherwise % Needed for code-generation
-        mod_table = 0;
+        mod_table = complex(zeros(0, 1));
         norm_factor = 1;
 end
 

@@ -1,9 +1,9 @@
-function [data_wf, data_f_mtx] = data_tx(PHY, pad_len, padding_out)
+function [data_wf, data_f_mtx] = data_tx(PHY, pad_len, padding_out, w_beta)
 %DATA_TX Transmitter processing of all DATA OFDM symbols
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 30-August-2018
+%   August 2018; Last revision: 19-February-2019
 
 % Copyright (C) u-blox
 %
@@ -92,8 +92,11 @@ for i_sym = 0:PHY.n_sym - 1
     % Insert modulated data into f-domain data symbol
     data_f(PHY.data_idx, 1) = mapper_tx(interlvr_out, PHY.n_bpscs);
     
+    % Apply spectral shaping window
+    data_fs = data_f.*kaiser(64, w_beta);
+    
     % Perform IFFT & normalize
-    temp_wf = 1/sqrt(PHY.n_sd + 4)*dot11_ifft(data_f, 64);
+    temp_wf = 1/sqrt(PHY.n_sd + 4)*dot11_ifft(data_fs, 64);
     
     % Append CP
     data_wf((1:80) + i_sym*80, :) = [temp_wf(49:64); temp_wf];

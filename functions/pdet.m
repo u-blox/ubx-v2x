@@ -3,7 +3,7 @@ function [idx, c_cfo, err] = pdet(in, s0_len, pdet_thold)
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 30-August-2018
+%   August 2018; Last revision: 19-February-2019
 
 % Copyright (C) u-blox
 %
@@ -24,7 +24,7 @@ function [idx, c_cfo, err] = pdet(in, s0_len, pdet_thold)
 % Purpose: V2X baseband simulation model
 
 % Obtain original STF waveform
-stf_wf = stf_tx();
+stf_wf = stf_tx(0);
 
 % Input STF signal
 xc_in = in(1:(s0_len + 80));
