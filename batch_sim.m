@@ -98,6 +98,10 @@ for i_mcs = 1:length(SIM.mcs_vec)
                 [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(TX.mcs, TX.payload_len, TX.window_en, TX.w_beta);
             end
             
+            % Add CFO error, assume [-5, 5] ppm per Tx/Rx device
+            cfo_err = sum(rand(2, 1) - .5)*10e-6;
+            tx_wf = apply_cfo(tx_wf, cfo_err);
+            
             % Apply Tx phase noise
             tx_wf = add_tx_pn(tx_wf, TX.pn_en);
             

@@ -1,9 +1,9 @@
-function [f_idx, f_cfo] = fine_sync(in, c_idx)
-%FINE_SYNC Fine synchronization
+function out = apply_cfo(in, cfo)
+%APPLY_CFO Apply frequency offset to input waveform
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 19-February-2019
+%   February 2019; Last revision: 22-February-2019
 
 % Copyright (C) u-blox
 %
@@ -23,24 +23,8 @@ function [f_idx, f_cfo] = fine_sync(in, c_idx)
 % Project: ubx-v2x
 % Purpose: V2X baseband simulation model
 
-% Obtain original LTF waveform
-ltf_wf = ltf_tx(0);
+% Frequency shift
+f = exp(1j*2*pi*cfo*(0:length(in) - 1)).';
 
-% Input LTF signal
-xc_in = in(c_idx + 160:c_idx + 223);
-
-% Cross-correlation of input with reference signals
-xc = abs(xcorr(ltf_wf(33:96), xc_in));
-
-% Find the maximum value
-[~, tmp] = max(xc);
-
-% Adjust index
-f_idx = 216 - tmp + c_idx;
-
-% Fine CFO estimation
-r1 = in(f_idx:(f_idx + 63), 1);
-r2 = in((f_idx + 64):(f_idx + 127), 1);
-f_cfo = -angle(sum(r1.*conj(r2)))/64/2/pi;
-
-end
+% Apply shift
+out = in.*f;

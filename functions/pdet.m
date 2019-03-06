@@ -50,6 +50,6 @@ end
 % Coarse CFO estimation
 r1 = in(idx:(idx + 15), 1);
 r2 = in((idx + 16):(idx + 31), 1);
-c_cfo = -angle(sum(r1.*conj(r2)))/16;
+c_cfo = -angle(sum(r1.*conj(r2)))/16/2/pi;
 
 end

@@ -35,13 +35,13 @@ if pdet_err
     err = 1;
 else
     % Coarse CFO correction
-    rx_wf = rx_wf.*exp(-1j*c_cfo*(1:length(rx_wf))).';
+    rx_wf = apply_cfo(rx_wf, -c_cfo);
     
     % Fine synchronization / fine CFO estimation
     [f_idx, f_cfo] = fine_sync(rx_wf, c_idx);
     
     % Fine CFO correction
-    rx_wf = rx_wf.*exp(-1j*f_cfo.*(1:length(rx_wf))).';
+    rx_wf = apply_cfo(rx_wf, -f_cfo);
     
     % Channel estimation
     wf_in = rx_wf(f_idx:f_idx + 127);
