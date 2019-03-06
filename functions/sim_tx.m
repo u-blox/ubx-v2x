@@ -1,4 +1,4 @@
-function [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(mcs, payload_len, window_en, w_beta)
+function [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(mcs, payload_len, window_en, w_beta, mid_period, ldpc_en)
 %SIM_RX High-level transmitter function
 %
 %   Author: Ioannis Sarris, u-blox
@@ -24,7 +24,7 @@ function [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(mcs, payload_len, window_en
 % Purpose: V2X baseband simulation model
 
 % Create structure with PHY parameters
-[PHY, data_msg] = tx_phy_params(mcs, payload_len);
+[PHY, data_msg] = tx_phy_params(mcs, payload_len, ldpc_en);
 
 % Get STF waveform
 stf_wf = stf_tx(w_beta);
@@ -35,14 +35,22 @@ ltf_wf = ltf_tx(w_beta);
 % Get SIG waveform
 sig_wf = sig_tx(PHY, w_beta);
 
-% Calculate number of required pad bits
-pad_len = PHY.n_sym*PHY.n_dbps - (16 + 8*PHY.length + 6);
-
-% Add service and zero-padding (pad + tail)
-padding_out = [false(16, 1); data_msg; false(pad_len + 6, 1)];
+% Different padding for LDPC/BCC
+if ldpc_en
+    pad_len = 0;
+    
+    % Add service and zero-padding (pad + tail)
+    padding_out = [false(16, 1); data_msg;];
+else
+    % Calculate number of required pad bits
+    pad_len = PHY.n_sym*PHY.n_dbps - (16 + 8*PHY.length + 6);
+    
+    % Add service and zero-padding (pad + tail)
+    padding_out = [false(16, 1); data_msg; false(pad_len + 6, 1)];
+end
 
 % Generate data waveform
-[data_wf, data_f_mtx] = data_tx(PHY, pad_len, padding_out, w_beta);
+[data_wf, data_f_mtx] = data_tx(PHY, pad_len, padding_out, w_beta, mid_period, ldpc_en);
 
 % Concatenate output waveform
 tx_wf = [stf_wf; ltf_wf; sig_wf; data_wf];

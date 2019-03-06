@@ -46,6 +46,10 @@ SIM.max_error       = 100;      % Number of packet errors before moving to next 
 SIM.min_error       = .005;     % Minimum PER target, beyond which, loop moves to next SNR point
 SIM.check_sp        = false;    % Plot Tx spectrum and check for compliance
 
+% Candidate NGV features
+SIM.mid_period      = 0;        % Midamble period M, (0: disabled, i.e. legacy)
+SIM.ldpc_en         = false;    % LDPC coding
+
 % Transmitter parameters
 TX.payload_len      = 300;      % PHY payload length (bytes)
 TX.window_en        = false;    % Apply time-domain windowing
@@ -95,7 +99,7 @@ for i_mcs = 1:length(SIM.mcs_vec)
             if SIM.use_mex
                 [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx_mex(TX.mcs, TX.payload_len, TX.window_en, TX.w_beta);
             else
-                [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(TX.mcs, TX.payload_len, TX.window_en, TX.w_beta);
+                [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(TX.mcs, TX.payload_len, TX.window_en, TX.w_beta, SIM.mid_period, SIM.ldpc_en);
             end
             
             % Add CFO error, assume [-5, 5] ppm per Tx/Rx device
@@ -139,7 +143,7 @@ for i_mcs = 1:length(SIM.mcs_vec)
             if SIM.use_mex
                 err = sim_rx_mex(PHY, rx_wf, s0_len, data_f_mtx, RX.t_depth, RX.pdet_thold);
             else
-                err = sim_rx(PHY, rx_wf, s0_len, data_f_mtx, RX.t_depth, RX.pdet_thold);
+                err = sim_rx(PHY, rx_wf, s0_len, data_f_mtx, RX.t_depth, RX.pdet_thold, SIM.mid_period, SIM.ldpc_en);
             end
             
             % Display debugging information

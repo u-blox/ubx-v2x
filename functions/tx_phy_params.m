@@ -1,4 +1,4 @@
-function [PHY, data_msg] = tx_phy_params(mcs, payload_len)
+function [PHY, data_msg] = tx_phy_params(mcs, payload_len, ldpc_en)
 %TX_PHY_PARAMS Initializes PHY layer parameters
 %
 %   Author: Ioannis Sarris, u-blox
@@ -62,8 +62,14 @@ PHY.n_bpscs = n_bpscs(mcs + 1);
 PHY.n_cbps  = 48*n_bpscs(mcs + 1);
 PHY.n_dbps  = 48*n_bpscs(mcs + 1)*rate_num(mcs + 1)/rate_denom(mcs + 1);
 
-% Calculate number of OFDM symbols
-PHY.n_sym = ceil((16 + 8*payload_len + 6)/(48*n_bpscs(mcs + 1)*rate_num(mcs + 1)/rate_denom(mcs + 1)));
+% Calculate number of OFDM symbols, different value for LDPC/BCC
+if ldpc_en
+    PHY.n_sym = ceil((16 + 8*payload_len)/PHY.n_dbps);
+    PHY.LDPC = ldpc_enc_params(payload_len, PHY.n_dbps, PHY.n_cbps);
+    PHY.n_sym = PHY.LDPC.Nsym;
+else
+    PHY.n_sym = ceil((16 + 8*payload_len + 6)/PHY.n_dbps);
+end
 
 % Create pseudo-random PSDU binary message (account for CRC-32)
 tmp_msg = randi([0 255], payload_len - 4, 1)'; 

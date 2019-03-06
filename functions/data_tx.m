@@ -1,4 +1,4 @@
-function [data_wf, data_f_mtx] = data_tx(PHY, pad_len, padding_out, w_beta)
+function [data_wf, data_f_mtx] = data_tx(PHY, pad_len, padding_out, w_beta, mid_period, ldpc_en)
 %DATA_TX Transmitter processing of all DATA OFDM symbols
 %
 %   Author: Ioannis Sarris, u-blox
@@ -45,43 +45,62 @@ pn_state = flipud(PHY.pn_seq);
 % Mark the tail bits so that they can be nulled after scrambling
 padding_vec = [true(16 + PHY.length*8, 1); false(6, 1); true(pad_len, 1)];
 
+% Find number of midamble symbols
+i_mid = 0;
+if (mid_period == 0)
+    n_mid = 0;
+else
+    n_mid = floor(PHY.n_sym/mid_period);
+end
+
 % Initialize time-domain waveform output
-data_wf = complex(zeros(PHY.n_sym*80, 1));
+data_wf = complex(zeros((PHY.n_sym + n_mid)*80, 1));
 
 % Initialize frequency-domain output
 data_f_mtx = complex(zeros(64, PHY.n_sym));
 
+% Perform LDPC encoding
+if ldpc_en
+    [~, scrambler_out] = scrambler_tx(padding_out, PHY.pn_seq);
+    ldpc_out = ldpc_enc(PHY.LDPC, scrambler_out);
+end
+
 % Loop for each OFDM symbol
 for i_sym = 0:PHY.n_sym - 1
     
-    % Index of bits into scrambler per OFDM symbol
-    idx0 = i_sym*PHY.n_dbps + 1;
-    idx1 = (i_sym + 1)*PHY.n_dbps;
-    
-    % Perform scrambling with given PN sequence
-    [pn_state, scrambler_out] = scrambler_tx(padding_out(idx0:idx1), pn_state);
-    
-    % Set scrambled tail bits to zero
-    scrambler_out = (scrambler_out & padding_vec(idx0:idx1));
-    
-    % Process data through BCC encoder
-    bcc_out = step(bcc_obj, scrambler_out);
-    
-    % Perform puncturing if needed
-    switch PHY.r_num
-        case 2
-            a1 = reshape(bcc_out, 4, []);
-            a2 = a1([1 2 3], :);
-            bcc_out = a2(:);
-            
-        case 3
-            a1 = reshape(bcc_out, 6, []);
-            a2 = a1([1 2 3 6], :);
-            bcc_out = a2(:);
+    % Process through FEC
+    if ldpc_en
+        fec_out = ldpc_out(i_sym*PHY.n_cbps + 1:(i_sym + 1)*PHY.n_cbps);
+    else
+        % Index of bits into scrambler per OFDM symbol
+        idx0 = i_sym*PHY.n_dbps + 1;
+        idx1 = (i_sym + 1)*PHY.n_dbps;
+        
+        % Perform scrambling with given PN sequence
+        [pn_state, scrambler_out] = scrambler_tx(padding_out(idx0:idx1), pn_state);
+        
+        % Set scrambled tail bits to zero
+        scrambler_out = (scrambler_out & padding_vec(idx0:idx1));
+        
+        % Process data through BCC encoder
+        fec_out = step(bcc_obj, scrambler_out);
+        
+        % Perform puncturing if needed
+        switch PHY.r_num
+            case 2
+                a1 = reshape(fec_out, 4, []);
+                a2 = a1([1 2 3], :);
+                fec_out = a2(:);
+                
+            case 3
+                a1 = reshape(fec_out, 6, []);
+                a2 = a1([1 2 3 6], :);
+                fec_out = a2(:);
+        end
     end
     
     % Apply interleaving per OFDM symbol
-    interlvr_out = interleaver(bcc_out, PHY.n_bpscs, PHY.n_cbps);
+    interlvr_out = interleaver(fec_out, PHY.n_bpscs, PHY.n_cbps);
     
     % Initialize f-domain data symbol
     data_f = complex(zeros(64, 1));
@@ -98,8 +117,19 @@ for i_sym = 0:PHY.n_sym - 1
     % Perform IFFT & normalize
     temp_wf = 1/sqrt(PHY.n_sd + 4)*dot11_ifft(data_fs, 64);
     
+    % Keep track of midamble symbols used
+    if (mid_period > 0)
+        i_mid = floor((i_sym + 1)/mid_period);
+    end
+    
     % Append CP
-    data_wf((1:80) + i_sym*80, :) = [temp_wf(49:64); temp_wf];
+    data_wf((1:80) + (i_sym + i_mid)*80 , :) = [temp_wf(49:64); temp_wf];
+    
+    % If this is a midamble symbol insert LTF sequence
+    if (mod((i_sym + 1), mid_period) == 0)
+        tmp = ltf_tx(0);
+        data_wf((1:80) + (i_sym + i_mid - 1)*80 , :) = tmp((17:96) + 8);
+    end
     
     % Store f-domain symbols which are needed for (genie) channel tracking at the Rx
     data_f_mtx(:, i_sym + 1) = data_f;

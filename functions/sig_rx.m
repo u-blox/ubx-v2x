@@ -1,4 +1,4 @@
-function [SIG_CFG, r_cfo] = sig_rx(r, h_est, data_idx, pilot_idx)
+function [SIG_CFG, r_cfo] = sig_rx(r, h_est, data_idx, pilot_idx, ldpc_en)
 %SIG_RX SIG message receiver/deparser
 %
 %   Author: Ioannis Sarris, u-blox
@@ -136,6 +136,10 @@ SIG_CFG.n_cbps = 48*SIG_CFG.n_bpscs;
 SIG_CFG.n_dbps = SIG_CFG.n_cbps*SIG_CFG.r_num/SIG_CFG.r_denom;
 
 % Number of OFDM symbols
-SIG_CFG.n_sym = ceil((16 + 8*SIG_CFG.length + 6)/SIG_CFG.n_dbps);
+if ldpc_en
+    SIG_CFG.n_sym = ceil((16 + 8*SIG_CFG.length)/SIG_CFG.n_dbps);
+else
+    SIG_CFG.n_sym = ceil((16 + 8*SIG_CFG.length + 6)/SIG_CFG.n_dbps);
+end
 
 end

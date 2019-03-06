@@ -1,4 +1,4 @@
-function descr_msg = data_rx(PHY, SIG_CFG, rx_wf, idx, h_est, data_f_mtx, t_depth, r_cfo)
+function descr_msg = data_rx(PHY, SIG_CFG, rx_wf, idx, h_est, data_f_mtx, t_depth, r_cfo, mid_period, ldpc_en)
 %DATA_RX Receiver processing of all DATA OFDM symbols
 %
 %   Author: Ioannis Sarris, u-blox
@@ -34,13 +34,37 @@ h_est_mtx = complex(zeros(64, SIG_CFG.n_sym + h_delay));
 h_est_mtx(:, 1:h_delay) = repmat(h_est, [1 h_delay]);
 
 % Loop for all OFDM symbols
-data_out_vec = zeros(SIG_CFG.n_dbps, SIG_CFG.n_sym);
+data_bcc_vec = zeros(SIG_CFG.n_dbps, SIG_CFG.n_sym);
+data_ldpc_vec = zeros(SIG_CFG.n_cbps, SIG_CFG.n_sym);
 evm_mtx = zeros(48, SIG_CFG.n_sym);
 for i_sym = 1:SIG_CFG.n_sym
     
     % Get waveform for current OFDM symbol
     idx = idx + 80;
     wf_in = rx_wf(idx:idx + 63);
+    
+    % Check if midamble is enabled
+    if (mid_period > 0)
+        
+        % If this is a midamble symbol perform channel estimation
+        if (mod(i_sym, mid_period) == 0)
+            % LTF f-domain represenation (including DC-subcarrier & guard bands)
+            ltf_f = [zeros(1,6), 1 1 -1 -1 1 1 -1 1 -1 1 1 1 1 1 1 -1 -1 1 1 -1 1 -1 1 1 1 1 0 ...
+                1 -1 -1 1 1 -1 1 -1 1 -1 -1 -1 -1 -1 1 1 -1 -1 1 -1 1 -1 1 1 1 1, zeros(1, 5)].';
+            
+            % FFT
+            y = dot11_fft(wf_in, 64)*sqrt(52)/64;
+            
+            % Least-Squares channel estimation
+            h_est_mtx(:, i_sym) = y./ltf_f;
+            
+            idx = idx + 80;
+            wf_in = rx_wf(idx:idx + 63);
+        elseif (i_sym > 1)
+            % If this is not a midamble symbol, repeat previous estimate
+            h_est_mtx(:, i_sym) = h_est_mtx(:, i_sym - 1);
+        end
+    end
     
     % Find polarity sign for pilot subcarriers
     pol_sign = PHY.polarity_sign(mod(i_sym + PHY.pilot_offset - 1, 127) + 1);
@@ -49,12 +73,17 @@ for i_sym = 1:SIG_CFG.n_sym
     y = complex(zeros(64, 1));
     y(:) = dot11_fft(wf_in([9:64 1:8], 1), 64)*sqrt(52)/64;
     
-    % Find (genie) channel estimate from received & transmitted waveforms
-    h_est_mtx(:, i_sym + h_delay) = y./data_f_mtx(:, i_sym);
-    
-    % Get channel estimate for current OFDM symbol
-    idx0 = max(1, i_sym - (t_depth - 1));
-    h_est = mean(h_est_mtx(:, idx0:i_sym), 2);
+    % If midamble is disabled, find (genie) channel estimate from received & transmitted waveforms
+    if (mid_period == 0)
+        h_est_mtx(:, i_sym + h_delay) = y./data_f_mtx(:, i_sym);
+        
+        % Get channel estimate for current OFDM symbol
+        idx0 = max(1, i_sym - (t_depth - 1));
+        h_est = mean(h_est_mtx(:, idx0:i_sym), 2);
+    else
+        % Channel estimate is last estimated symbol
+        h_est = h_est_mtx(:, i_sym);
+    end
     
     % Frequency-domain smoothing
     h_est = fd_smooth(h_est);
@@ -77,18 +106,30 @@ for i_sym = 1:SIG_CFG.n_sym
     % Deinterleaving
     x_data = deinterleaver(llr_in, SIG_CFG.n_bpscs, SIG_CFG.n_cbps);
     
-    % Store output binary data per OFDM symbol
-    data_out_vec(:, i_sym) = bcc_dec(x_data', SIG_CFG.r_num, (i_sym == 1));
+    % Process through Viterbi decoder or store for LDPC processing
+    if ldpc_en
+        % Store data for LDPC processing
+        data_ldpc_vec(:, i_sym) = x_data;
+    else
+        % Store output binary data per OFDM symbol
+        data_bcc_vec(:, i_sym) = bcc_dec(x_data', SIG_CFG.r_num, (i_sym == 1));
+    end
     
     % EVM for debugging
     evm_mtx(:, i_sym) = abs(data_f_mtx(PHY.data_idx, i_sym) - sym_out).^2;
 end
 
-% Last pass of Viterbi decoder
-bits_out = bcc_dec(zeros(96*2, 1), SIG_CFG.r_num, false);
-data_out = [data_out_vec(:); bits_out];
-
-% Descrambling
-descr_msg = descrambler_rx(logical(data_out(97:end)), true);
+% LDPC decoder or last pass of Viterbi
+if ldpc_en
+    data_out = ldpc_dec(PHY.LDPC, [data_ldpc_vec(:)*2^PHY.n_bpscs; zeros(PHY.n_cbps,1)]);
+    % Descrambling
+    descr_msg = descrambler_rx(logical(data_out), true);
+else
+    % Last pass of Viterbi decoder
+    bits_out = bcc_dec(zeros(96*2, 1), SIG_CFG.r_num, false);
+    data_out = [data_bcc_vec(:); bits_out];
+    % Descrambling
+    descr_msg = descrambler_rx(logical(data_out(97:end)), true);
+end
 
 end

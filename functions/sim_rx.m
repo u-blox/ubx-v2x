@@ -1,4 +1,4 @@
-function err = sim_rx(PHY, rx_wf, s0_len, data_f_mtx, t_depth, pdet_thold)
+function err = sim_rx(PHY, rx_wf, s0_len, data_f_mtx, t_depth, pdet_thold, mid_period, ldpc_en)
 %SIM_RX High-level receiver function
 %
 %   Author: Ioannis Sarris, u-blox
@@ -50,14 +50,19 @@ else
     % SIG reception
     idx = f_idx + 128 + 16;
     wf_in = rx_wf(idx:idx + 63);
-    [SIG_CFG, r_cfo] = sig_rx(wf_in, h_est, PHY.data_idx, PHY.pilot_idx);
+    [SIG_CFG, r_cfo] = sig_rx(wf_in, h_est, PHY.data_idx, PHY.pilot_idx, ldpc_en);
     
+    % Correct number of OFDM symbols in case of LDPC
+    if ldpc_en
+        SIG_CFG.n_sym = PHY.LDPC.Nsym;
+    end
+
     % Detect SIG errors and abort or proceed with data processing
     if (SIG_CFG.sig_err || (SIG_CFG.n_sym ~= PHY.n_sym) || (SIG_CFG.mcs ~= PHY.mcs))
         err = 2;
     else
         % Data processing
-        rx_out = data_rx(PHY, SIG_CFG, rx_wf, idx, h_est, data_f_mtx, t_depth, r_cfo);
+        rx_out = data_rx(PHY, SIG_CFG, rx_wf, idx, h_est, data_f_mtx, t_depth, r_cfo, mid_period, ldpc_en);
         
         % Check if payload length is correct
         len = PHY.length;
