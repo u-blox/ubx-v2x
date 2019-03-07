@@ -48,7 +48,7 @@ if enabled
     % Check if object needs to be released in case of varying input length
     if (length(in) ~= in_len)
         in_len = length(in);
-        release(pn_obj);
+        release(pa_obj);
     end
     
     % Apply the model to the transmit waveform
