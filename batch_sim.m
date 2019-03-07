@@ -25,7 +25,7 @@
 
 %% Initialization
 clc
-clear
+clear all
 close all
 
 addpath('./functions;./mex')
@@ -38,13 +38,14 @@ RandStream.setGlobalStream(rand_stream);
 % Simulation parameters
 SIM.mcs_vec         = 0:7;      % Scalar or vector containing MCS values (0...7)
 SIM.snr             = 0:.5:25;  % Scalar or vector containing SNR values (dB)
-SIM.ovs             = 1; 		% Oversampling factor
+SIM.ovs             = 1;        % Oversampling factor
 SIM.channel_model   = 0;        % Channel model (0: AWGN, 1-5: C2C models R-LOS, UA-LOS, C-NLOS, H-LOS and H-NLOS, 6-10: Enhanced C2C models R-LOS-ENH, UA-LOS-ENH, C-NLOS-ENH, H-LOS-ENH and H-NLOS-ENH)
 SIM.use_mex         = false;    % Use MEX functions to accelerate simulation
 SIM.n_iter          = 1000;     % Number of Monte-Carlo iterations
 SIM.max_error       = 100;      % Number of packet errors before moving to next SNR point
 SIM.min_error       = .005;     % Minimum PER target, beyond which, loop moves to next SNR point
 SIM.check_sp        = false;    % Plot Tx spectrum and check for compliance
+SIM.apply_cfo       = false;    % Apply CFO impairment on Tx and Rx
 
 % Candidate NGV features
 SIM.mid_period      = 0;        % Midamble period M, (0: disabled, i.e. legacy)
@@ -103,8 +104,10 @@ for i_mcs = 1:length(SIM.mcs_vec)
             end
             
             % Add CFO error, assume [-5, 5] ppm per Tx/Rx device
-            cfo_err = sum(rand(2, 1) - .5)*10e-6;
-            tx_wf = apply_cfo(tx_wf, cfo_err);
+            if SIM.apply_cfo
+                cfo_err = sum(rand(2, 1) - .5)*10e-6;
+                tx_wf = apply_cfo(tx_wf, cfo_err);
+            end
             
             % Apply Tx phase noise
             tx_wf = add_tx_pn(tx_wf, TX.pn_en);

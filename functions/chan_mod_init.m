@@ -91,7 +91,7 @@ doppler_spec{1} = doppler('Asymmetric Jakes', [-.02 .02]);
 
 % Remaining taps follow an Asymmetiric Jakes distribution (or "Half-Bathtub")
 for ii = 2:length(dpl_shft)
-   doppler_spec{ii} = doppler('Asymmetric Jakes', sort([0 dpl_shft(ii)/fd])); 
+    doppler_spec{ii} = doppler('Asymmetric Jakes', sort([0 dpl_shft(ii)/fd]));
 end
 
 % Create channel object
