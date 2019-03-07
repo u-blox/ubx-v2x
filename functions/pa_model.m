@@ -23,7 +23,7 @@ function out = pa_model(in, enabled)
 % Project: ubx-v2x
 % Purpose: V2X baseband simulation model
 
-persistent pa_obj in_len
+persistent pa_obj in_len pa_bo
 
 % Default output is equal to input
 out = in;
@@ -34,11 +34,14 @@ if enabled
         % Length of vector
         in_len = length(in);
         
+        % PA backoff
+        pa_bo = -8;
+        
         % System object
         pa_obj = comm.MemorylessNonlinearity( ...
             'Method', 'Rapp model', ...
             'Smoothness', 3, ... % p parameter
-            'LinearGain', -6 ... % dB
+            'LinearGain', pa_bo ... % dB
             );
     end
     
@@ -49,5 +52,5 @@ if enabled
     end
     
     % Apply the model to the transmit waveform
-    out = pa_obj(in);
+    out = pa_obj(in)/db2mag(pa_bo);
 end
