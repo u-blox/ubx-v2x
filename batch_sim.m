@@ -101,7 +101,7 @@ for i_mcs = 1:length(SIM.mcs_vec)
             
             % Add CFO error, assume [-5, 5] ppm per Tx/Rx device
             if SIM.apply_cfo
-                cfo_err = sum(rand(2, 1) - .5)*10e-6;
+                cfo_err = sum(rand(2, 1)*10 - 5)*1e-6;
                 tx_wf = apply_cfo(tx_wf, cfo_err);
             end
             
