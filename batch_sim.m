@@ -65,11 +65,11 @@ TX.mac_payload = crc32(tmp_msg);
 if SIM.use_mex
     [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx_mex(TX.mcs, TX.mac_payload, TX.pn_seq, TX.window_en, TX.w_beta);
     [rx_wf, s0_len] = add_impairments_mex(SIM, tx_wf);
-    [pld_bytes, err] = sim_rx_mex(rx_wf, s0_len, data_f_mtx, RX.t_depth, RX.pdet_thold);
+    [pld_bytes, err] = sim_rx_mex(rx_wf, s0_len, RX.pdet_thold);
 else
     [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(TX.mcs, TX.mac_payload, TX.pn_seq, TX.window_en, TX.w_beta);
     [rx_wf, s0_len] = add_impairments(SIM, tx_wf);
-    [pld_bytes, err] = sim_rx(rx_wf, s0_len, data_f_mtx, RX.t_depth, RX.pdet_thold);
+    [pld_bytes, err] = sim_rx(rx_wf, s0_len, RX.pdet_thold);
 end
 
 % Display debugging information

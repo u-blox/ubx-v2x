@@ -36,5 +36,5 @@ toc
 
 tic
 disp('Creating MEX for sim_rx')
-codegen -args {coder.typeof(1j, [inf 1], [1 0]), 0, coder.typeof(1j, [64 1400], [0 1]), 0, 0} sim_rx -o ./mex/sim_rx_mex -config:mex -report
+codegen -args {coder.typeof(1j, [inf 1], [1 0]), 0, 0} sim_rx -o ./mex/sim_rx_mex -config:mex -report
 toc
