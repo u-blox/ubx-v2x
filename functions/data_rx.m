@@ -28,7 +28,6 @@ coder.varsize('sym_out', [48 1], [0 0]);
 
 % Loop for all OFDM symbols
 data_out_vec = zeros(SIG_CFG.n_dbps, SIG_CFG.n_sym);
-evm_mtx = zeros(48, SIG_CFG.n_sym);
 for i_sym = 1:SIG_CFG.n_sym
     
     % Get waveform for current OFDM symbol
