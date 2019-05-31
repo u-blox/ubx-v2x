@@ -1,5 +1,5 @@
-function [PHY, data_msg] = tx_phy_params(mcs, mac_payload, pn_seq)
-%TX_PHY_PARAMS Initializes PHY layer parameters
+function PHY = update_phy_params(PHY, mcs, payload_length)
+%UPDATE_PHY_PARAMS Updates PHY layer parameters
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
@@ -23,31 +23,6 @@ function [PHY, data_msg] = tx_phy_params(mcs, mac_payload, pn_seq)
 % Project: ubx-v2x
 % Purpose: V2X baseband simulation model
 
-% Store MCS / payload length
-PHY.mcs     = mcs;
-PHY.length  = length(mac_payload);
-
-% Initialize scrambler with a 7-bit non-allzero PN sequence (random or pre-set)
-PHY.pn_seq = pn_seq;
-
-% Pilot subcarrier indices and values
-PHY.pilot_idx = [-21 -7 7 21].' + 33;
-PHY.pilot_val = [1 1 1 -1].';
-
-% Polarity signs to use for pilots
-PHY.polarity_sign = [1,1,1,1,-1,-1,-1,1,-1,-1,-1,-1,1,1,-1,1,-1,-1,1,1,-1,1,1,-1,1,1,1,1,1,1,-1,1,1,1,-1,1,1,-1,-1,1,1,1, ...
-    -1,1,-1,-1,-1,1,-1,1,-1,-1,1,-1,-1,1,1,1,1,1,-1,-1,1,1,-1,-1,1,-1,1,-1,1,1,-1,-1,-1,1,1,-1,-1,-1,-1,1,-1,-1,1, ...
-    -1,1,1,1,1,-1,1,-1,1,-1,1,-1,-1,-1,-1,-1,1,-1,1,1,-1,1,-1,1,1,1,-1,-1,1,-1,-1,-1,1,1,1,-1,-1,-1,-1,-1,-1,-1].';
-
-% Starting index for pilot polarity index
-PHY.pilot_offset = 1;
-
-% Data subcarrier indices
-PHY.data_idx = [-26:-22 -20:-8 -6:-1 1:6 8:20 22:26].' + 33;
-
-% Number of data subcarriers
-PHY.n_sd = 48;
-
 % MCS tables for coding rate (numerator / denominator) and bits per modulation symbol
 rate_num = [1 3 1 3 1 3 2 3];
 rate_denom = [2 4 2 4 2 4 3 4];
@@ -63,10 +38,6 @@ PHY.n_cbps  = 48*n_bpscs(mcs + 1);
 PHY.n_dbps  = 48*n_bpscs(mcs + 1)*rate_num(mcs + 1)/rate_denom(mcs + 1);
 
 % Calculate number of OFDM symbols
-PHY.n_sym = ceil((16 + 8*length(mac_payload) + 6)/(48*n_bpscs(mcs + 1)*rate_num(mcs + 1)/rate_denom(mcs + 1)));
-
-% Convert byte to binary data
-data_msg = logical(de2bi(mac_payload, 8))';
-data_msg = data_msg(:);
+PHY.n_sym = ceil((16 + 8*length(payload_length) + 6)/(48*n_bpscs(mcs + 1)*rate_num(mcs + 1)/rate_denom(mcs + 1)));
 
 end

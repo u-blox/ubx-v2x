@@ -26,10 +26,15 @@ addpath('./functions')
 
 tic
 disp('Creating MEX for sim_tx')
-codegen -args {0, 0, true, 0} sim_tx -o ./mex/sim_tx_mex -config:mex -report
+codegen -args {0, coder.typeof(uint32(0), [1 4096], [0 1]), coder.typeof(true, [7 1], [0 0]), true, 0} sim_tx -o ./mex/sim_tx_mex -config:mex -report
+toc
+
+tic
+disp('Creating MEX for add_impairments')
+codegen -args {SIM, coder.typeof(1j, [inf 1], [1 0])} add_impairments -o ./mex/add_impairments_mex -config:mex -report
 toc
 
 tic
 disp('Creating MEX for sim_rx')
-codegen -args {PHY, coder.typeof(1j, [inf 1], [1 0]), 0, coder.typeof(1j, [64 1400], [0 1]), 0, 0} sim_rx -o ./mex/sim_rx_mex -config:mex -report
+codegen -args {coder.typeof(1j, [inf 1], [1 0]), 0, coder.typeof(1j, [64 1400], [0 1]), 0, 0} sim_rx -o ./mex/sim_rx_mex -config:mex -report
 toc

@@ -1,4 +1,4 @@
-function err = sim_rx(PHY, rx_wf, s0_len, data_f_mtx, t_depth, pdet_thold)
+function [pld_bytes, err] = sim_rx(rx_wf, s0_len, data_f_mtx, t_depth, pdet_thold)
 %SIM_RX High-level receiver function
 %
 %   Author: Ioannis Sarris, u-blox
@@ -26,11 +26,15 @@ function err = sim_rx(PHY, rx_wf, s0_len, data_f_mtx, t_depth, pdet_thold)
 % Needed for code generation
 coder.varsize('rx_out', [8*4096 1], [1 0]);
 
+% Initialize PHY parameters
+PHY = rx_phy_params;
+
 % Packet detection / coarse CFO estimation
 [c_idx, c_cfo, pdet_err] = pdet(rx_wf, s0_len, pdet_thold);
 
 % If no packet error, proceed with packet decoding
 err = 0;
+pld_bytes = [];
 if pdet_err
     err = 1;
 else
@@ -53,24 +57,28 @@ else
     [SIG_CFG, r_cfo] = sig_rx(wf_in, h_est, PHY.data_idx, PHY.pilot_idx);
     
     % Detect SIG errors and abort or proceed with data processing
-    if (SIG_CFG.sig_err || (SIG_CFG.n_sym ~= PHY.n_sym) || (SIG_CFG.mcs ~= PHY.mcs))
+    if (SIG_CFG.sig_err)
         err = 2;
     else
+        
+        % Update PHY parameters based on SIG
+        PHY = update_phy_params(PHY, SIG_CFG.mcs, SIG_CFG.length);
+        
         % Data processing
         rx_out = data_rx(PHY, SIG_CFG, rx_wf, idx, h_est, data_f_mtx, t_depth, r_cfo);
         
         % Check if payload length is correct
-        len = PHY.length;
+        len = SIG_CFG.length;
         if (len >= 5)
             
             % Convert to bytes
             pld_bytes = bi2de(reshape(rx_out(10:10 + len*8 - 1), 8, len)');
             
             % Calculate CRC-32
-            pld_crc32 = crc32(pld_bytes(1:len - 4)');
+            pld_crc32 = double(crc32(pld_bytes(1:len - 4, 1)'));
             
             % Check CRC for errors
-            if (any(pld_crc32(len - 3:len) ~= pld_bytes(len - 3:len)'))
+            if (any(pld_crc32(1, len - 3:len) ~= pld_bytes(len - 3:len, 1)'))
                 err = 3;
             end
         else

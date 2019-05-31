@@ -1,4 +1,4 @@
-function [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(mcs, payload_len, window_en, w_beta)
+function [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(mcs, mac_payload, pn_seq, window_en, w_beta)
 %SIM_RX High-level transmitter function
 %
 %   Author: Ioannis Sarris, u-blox
@@ -24,7 +24,7 @@ function [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(mcs, payload_len, window_en
 % Purpose: V2X baseband simulation model
 
 % Create structure with PHY parameters
-[PHY, data_msg] = tx_phy_params(mcs, payload_len);
+[PHY, data_msg] = tx_phy_params(mcs, mac_payload, pn_seq);
 
 % Get STF waveform
 stf_wf = stf_tx(w_beta);
