@@ -56,8 +56,8 @@ else
     wf_in = rx_wf(idx:idx + 63);
     [SIG_CFG, r_cfo] = sig_rx(wf_in, h_est, PHY.data_idx, PHY.pilot_idx);
     
-    % Detect SIG errors and abort or proceed with data processing
-    if (SIG_CFG.sig_err)
+    % Identify SIG errors from parity or length inconsistency and abort or proceed with data processing
+    if (SIG_CFG.sig_err || ((SIG_CFG.n_sym*80 + 63 + idx) > size(rx_wf, 1)))
         err = 2;
     else
         
