@@ -3,7 +3,7 @@ function [sig_wf, sig_mod] = sig_tx(PHY, w_beta)
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 19-February-2019
+%   August 2018; Last revision: 10-July-2019
 
 % Copyright (C) u-blox
 %
@@ -73,7 +73,7 @@ sig_msg = logical([sig_rate, 0, binary_length, sig_parity, 0 0 0 0 0 0].');
 sig_enc = step(bcc_obj, sig_msg);
 
 % Interleaver
-sig_int = interleaver(sig_enc(1:48), 1, 48);
+sig_int = interleaver(sig_enc(1:48), 1, 48, 1);
 
 % BPSK modulation
 sig_mod = 2*sig_int - 1;
@@ -82,7 +82,7 @@ sig_mod = 2*sig_int - 1;
 sig_sp = zeros(64, 1);
 
 % Map modulated symbols on data subcarriers
-sig_sp(PHY.data_idx) = sig_mod;
+sig_sp(PHY.sig_idx) = sig_mod;
 
 % Append pilots
 sig_sp(PHY.pilot_idx) = PHY.pilot_val;

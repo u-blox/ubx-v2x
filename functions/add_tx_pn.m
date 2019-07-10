@@ -3,7 +3,7 @@ function out = add_tx_pn(in, enabled)
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   February 2019; Last revision: 19-February-2019
+%   February 2019; Last revision: 10-July-2019
 
 % Copyright (C) u-blox
 %
@@ -59,4 +59,6 @@ if enabled
     
     % Apply phase noise to input waveform
     out = pn_obj(in);
+end
+
 end

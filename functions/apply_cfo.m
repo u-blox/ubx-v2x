@@ -3,7 +3,7 @@ function out = apply_cfo(in, cfo)
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   February 2019; Last revision: 22-February-2019
+%   February 2019; Last revision: 10-July-2019
 
 % Copyright (C) u-blox
 %
@@ -24,7 +24,9 @@ function out = apply_cfo(in, cfo)
 % Purpose: V2X baseband simulation model
 
 % Frequency shift
-f = exp(1j*2*pi*cfo*(0:length(in) - 1)).';
+f = exp(1j*2*pi*cfo*5.9e9/10e6*(0:length(in) - 1)).';
 
 % Apply shift
 out = in.*f;
+
+end

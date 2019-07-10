@@ -1,9 +1,9 @@
-function out = deinterleaver(in, n_bpscs, n_cbps)
+function out = deinterleaver(in, n_bpscs, n_cbps, ppdu_fmt)
 %DEINTERLEAVER Bit deinterleaver
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 30-August-2018
+%   August 2018; Last revision: 10-July-2019
 
 % Copyright (C) u-blox
 %
@@ -23,6 +23,14 @@ function out = deinterleaver(in, n_bpscs, n_cbps)
 % Project: ubx-v2x
 % Purpose: V2X baseband simulation model
 
+% De-interleaver configuration
+n_col = 16;
+n_row = n_cbps/16;
+if (ppdu_fmt == 2)
+    n_col = 13;
+    n_row = 4*n_bpscs;
+end
+
 % s-parameter
 s = max(n_bpscs/2, 1);
 
@@ -33,10 +41,10 @@ out = zeros(1, numel(in));
 kk = (0:n_cbps - 1);
 
 % First permutation
-ii = n_cbps/16*mod(kk, 16) + floor(kk/16);
+ii = n_row*mod(kk, n_col) + floor(kk/n_col);
 
 % Second permutation
-jj = s*floor(ii/s) + mod(ii + n_cbps - floor(16*ii/n_cbps), s);
+jj = s*floor(ii/s) + mod(ii + n_cbps - floor(n_col*ii/n_cbps), s);
 
 % Deinterleaver mapping
 out(kk + 1) = in(jj + 1);

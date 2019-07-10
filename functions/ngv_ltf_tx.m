@@ -1,9 +1,9 @@
-function h_est = chan_est(r)
-%CHAN_EST Channel estimation algorithm, using LTF preamble
+function ngv_ltf_wf = ngv_ltf_tx(w_beta)
+%NGV_LTF_TX Generates NGV-LTF preamble
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 10-July-2019
+%   July 2019; Last revision: 10-July-2019
 
 % Copyright (C) u-blox
 %
@@ -23,17 +23,22 @@ function h_est = chan_est(r)
 % Project: ubx-v2x
 % Purpose: V2X baseband simulation model
 
-% LTF f-domain represenation (including DC-subcarrier & guard bands)
-ltf_f = [zeros(1,6), 1 1 -1 -1 1 1 -1 1 -1 1 1 1 1 1 1 -1 -1 1 1 -1 1 -1 1 1 1 1 0 ...
-    1 -1 -1 1 1 -1 1 -1 1 -1 -1 -1 -1 -1 1 1 -1 -1 1 -1 1 -1 1 1 1 1, zeros(1, 5)].';
+% Store this as a persistent variable to avoid recalculation
+persistent ngv_ltf_wf_base
 
-% Average the two t-domain symbols
-r_avg = (r(1:64, 1) + r(65:128, 1))/2;
+if isempty(ngv_ltf_wf_base)
+    % NGV-LTF f-domain represenation (including DC-subcarrier & guard bands)
+    ngv_ltf_f = [zeros(1,4), 1 1 1 1 -1 -1 1 1 -1 1 -1 1 1 1 1 1 1 -1 -1 1 1 -1 1 -1 1 1 1 1 0 ...
+        1 -1 -1 1 1 -1 1 -1 1 -1 -1 -1 -1 -1 1 1 -1 -1 1 -1 1 -1 1 1 1 1 1 1, zeros(1, 3)].';
+    
+    % Apply spectral shaping window
+    ngv_ltf_f = ngv_ltf_f.*kaiser(64, w_beta);
+    
+    % Base LTF waveform
+    ngv_ltf_wf_base = 1/sqrt(56)*dot11_ifft(ngv_ltf_f, 64);
+end
 
-% FFT on the averaged sequence
-y = dot11_fft(r_avg([9:64 1:8], 1), 64)*sqrt(52)/64;
-
-% Least-Squares channel estimation
-h_est = y./ltf_f;
+% Append CP
+ngv_ltf_wf = [ngv_ltf_wf_base(49:64); ngv_ltf_wf_base];
 
 end

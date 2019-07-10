@@ -1,9 +1,9 @@
-function h_est = chan_est(r)
-%CHAN_EST Channel estimation algorithm, using LTF preamble
+function [sym_out, snr_vec_out] = ldpc_tonedemap(sym_in, snr_vec_in, n_fft)
+%LDPC_TONEDEMAP Inverse of LDPC tone-mapping
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 10-July-2019
+%   July 2019; Last revision: 10-July-2019
 
 % Copyright (C) u-blox
 %
@@ -23,17 +23,27 @@ function h_est = chan_est(r)
 % Project: ubx-v2x
 % Purpose: V2X baseband simulation model
 
-% LTF f-domain represenation (including DC-subcarrier & guard bands)
-ltf_f = [zeros(1,6), 1 1 -1 -1 1 1 -1 1 -1 1 1 1 1 1 1 -1 -1 1 1 -1 1 -1 1 1 1 1 0 ...
-    1 -1 -1 1 1 -1 1 -1 1 -1 -1 -1 -1 -1 1 1 -1 -1 1 -1 1 -1 1 1 1 1, zeros(1, 5)].';
+% Tone demapping configuration per bandwidth
+switch n_fft
+    case 64
+        d_tm = 4;
+        n_sd = 52;
+    case 128
+        d_tm = 6;
+        n_sd = 108;
+end
 
-% Average the two t-domain symbols
-r_avg = (r(1:64, 1) + r(65:128, 1))/2;
+% Input index
+idx_in = 0:n_sd - 1;
 
-% FFT on the averaged sequence
-y = dot11_fft(r_avg([9:64 1:8], 1), 64)*sqrt(52)/64;
+% Output index
+idx_out = d_tm.*mod(idx_in, n_sd/d_tm) + floor(idx_in*d_tm/n_sd);
 
-% Least-Squares channel estimation
-h_est = y./ltf_f;
+% Interleave symbols and SNR levels
+sym_out = sym_in;
+sym_out(idx_in + 1, :) = sym_in(idx_out + 1, :);
+
+snr_vec_out = snr_vec_in;
+snr_vec_out(idx_in + 1, :) = snr_vec_in(idx_out + 1, :);
 
 end

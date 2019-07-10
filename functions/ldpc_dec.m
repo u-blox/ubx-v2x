@@ -3,7 +3,7 @@ function unc_bits = ldpc_dec(LDPC, llr_in)
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   March 2019; Last revision: 06-March-2019
+%   March 2019; Last revision: 10-July-2019
 
 % Copyright (C) u-blox
 %
@@ -23,8 +23,6 @@ function unc_bits = ldpc_dec(LDPC, llr_in)
 % Project: ubx-v2x
 % Purpose: V2X baseband simulation model
 
-persistent LDPC_comm_dec_obj
-
 % LDPC parameters
 Ncw = LDPC.Ncw;
 K0 = LDPC.K0;
@@ -41,21 +39,9 @@ idx1 = 1;
 idx2 = 1;
 unc_bits = zeros(Ncw*K0 - Nshrt, 1);
 
-% Generate appropriate LDPC decoder object (use persistent object to avoid unecessary reinitialization)
-if isempty(LDPC_comm_dec_obj) || ...
-        size(LDPC_comm_dec_obj.ParityCheckMatrix, 1) ~= floor(Lldpc*(1 - rate)) || ...
-        size(LDPC_comm_dec_obj.ParityCheckMatrix, 2) ~= Lldpc
-    
-    % Get parity check matrix
-    parity_check_table = get_ldpc_matrix(Lldpc, rate);
-    
-    % Create MATLAB LDPC object
-    [row, col] = find(parity_check_table);
-    H = sparse(row,col,ones(length(row),1));
-    LDPC_comm_dec_obj = comm.LDPCDecoder(H, 'MaximumIterationCount', 50);
-    LDPC_comm_dec_obj.NumIterationsOutputPort = true;
-    LDPC_comm_dec_obj.IterationTerminationCondition = 'Parity check satisfied';
-end
+% Initialize LDPC object
+rx_ldpc_code = LDPCCode(0, 0);
+rx_ldpc_code.load_wifi_ldpc(Lldpc, rate);
 
 % Loop for LDPC codewords
 for i_cw = 1:Ncw
@@ -65,7 +51,7 @@ for i_cw = 1:Ncw
     short_len = vNshrt(i_cw);
     
     % Parity length
-    par_len = size(LDPC_comm_dec_obj.ParityCheckMatrix, 1) - LDPC.vNpunc(i_cw);
+    par_len = rx_ldpc_code.M - LDPC.vNpunc(i_cw);
     
     % Check if CW length is incorrectly received to avoid errors
     if length(llr_in) >= (idx1 + vCwLen(i_cw) - 1)
@@ -94,7 +80,6 @@ for i_cw = 1:Ncw
             
             % Add columns to increase SNR of soft-bits
             X_cw = sum(X_mat, 2)/(int_rep + 2);
-            
         end
         
         % Initialize coded bits vector
@@ -110,7 +95,7 @@ for i_cw = 1:Ncw
         cod_bits(inf_bits_len + short_len + 1:inf_bits_len + short_len + par_len) = X_cw(inf_bits_len + 1:inf_bits_len + par_len);
         
         % LDPC decoding
-        unc_bits_temp = step(LDPC_comm_dec_obj, cod_bits);
+        [unc_bits_temp, ~] = rx_ldpc_code.decode_llr(cod_bits, 50, 1);
         
         % Concatenate uncoded bits to a vector
         unc_bits(idx2:idx2 + inf_bits_len - 1) = unc_bits_temp(1:inf_bits_len);

@@ -3,7 +3,7 @@ function cod_bits = ldpc_enc(LDPC, data_in)
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   March 2019; Last revision: 06-March-2019
+%   March 2019; Last revision: 10-July-2019
 
 % Copyright (C) u-blox
 %
@@ -23,8 +23,6 @@ function cod_bits = ldpc_enc(LDPC, data_in)
 % Project: ubx-v2x
 % Purpose: V2X baseband simulation model
 
-persistent LDPC_comm_enc_obj
-
 % LDPC parameters
 Ncw = LDPC.Ncw;
 K0 = LDPC.K0;
@@ -37,24 +35,14 @@ vCwLen = LDPC.vCwLen;
 Lldpc = LDPC.Lldpc;
 rate = LDPC.rate;
 
-% Generate appropriate LDPC decoder object
-if isempty(LDPC_comm_enc_obj) || ...
-        size(LDPC_comm_enc_obj.ParityCheckMatrix, 1) ~= floor(Lldpc*(1 - rate)) || ...
-        size(LDPC_comm_enc_obj.ParityCheckMatrix, 2) ~= Lldpc
-    
-    % Get parity check matrix
-    parity_check_table = get_ldpc_matrix(Lldpc, rate);
-    
-    % Create MATLAB LDPC object
-    [row, col] = find(parity_check_table);
-    H = sparse(row,col,ones(length(row),1));
-    LDPC_comm_enc_obj = comm.LDPCEncoder(H);
-end
+% Initialize LDPC object
+tx_ldpc_code = LDPCCode(0, 0);
+tx_ldpc_code.load_wifi_ldpc(Lldpc, rate);
 
 % Initialize indices & variables
 idx1 = 0;
 idx2 = 0;
-cod_bits = zeros(Navbits, 1);
+cod_bits = false(Navbits, 1);
 
 for i_cw = 1:Ncw
     
@@ -67,7 +55,7 @@ for i_cw = 1:Ncw
     idx1 = idx1 + n_info;
     
     % LDPC encoding
-    cod_bits_temp = step(LDPC_comm_enc_obj, unc_bits);
+    cod_bits_temp = tx_ldpc_code.encode_bits(unc_bits);
     
     % Remove shortening bits
     inf_bits = cod_bits_temp(1:K0 - vNshrt(i_cw));
@@ -85,7 +73,7 @@ for i_cw = 1:Ncw
         if vNrepInt(i_cw) > 0
             rep_bits = repmat(temp_cw, vNrepInt(i_cw), 1);
         else
-            rep_bits = [];
+            rep_bits = zeros(0, 1);
         end
         
         % Assemble LDPC codeword, appending any fractional repetition bits at the end

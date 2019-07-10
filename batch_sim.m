@@ -3,7 +3,7 @@
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 19-February-2019
+%   August 2018; Last revision: 10-July-2019
 
 % Copyright (C) u-blox
 %
@@ -28,7 +28,7 @@ clc
 clear all
 close all
 
-addpath('./functions;./mex')
+addpath('./functions;./ext;./mex')
 
 % Set random number generator to specific seed
 rand_stream = RandStream('mt19937ar', 'Seed', 0);
@@ -47,16 +47,17 @@ SIM.min_error       = .005;     % Minimum PER target, beyond which, loop moves t
 SIM.check_sp        = false;    % Plot Tx spectrum and check for compliance
 SIM.apply_cfo       = false;    % Apply CFO impairment on Tx and Rx
 
-% Candidate NGV features
-SIM.mid_period      = 0;        % Midamble period M, (0: disabled, i.e. legacy)
-SIM.ldpc_en         = false;    % LDPC coding
-
 % Transmitter parameters
 TX.payload_len      = 300;      % PHY payload length (bytes)
 TX.window_en        = false;    % Apply time-domain windowing
 TX.w_beta           = 0;        % Kaiser window beta coefficient for spectral shaping (0: disabled)
 TX.pa_enable        = false;    % Apply PA non-linearity model
 TX.pn_en            = false;    % Model Tx phase noise
+
+% Candidate NGV features
+TX.ppdu_fmt         = 2;        % PPDU format (1: Legacy, 2: NGV)
+TX.ldpc_en          = true;     % LDPC coding
+TX.mid_period       = 4;        % Midamble period M, (0: disabled, i.e. legacy)
 
 % Receiver parameters
 RX.pdet_thold       = 20;       % Packet detection threshold
@@ -98,9 +99,9 @@ for i_mcs = 1:length(SIM.mcs_vec)
             
             % Transmitter model (MEX or M)
             if SIM.use_mex
-                [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx_mex(TX.mcs, TX.payload_len, TX.window_en, TX.w_beta);
+                [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx_mex(TX);
             else
-                [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(TX.mcs, TX.payload_len, TX.window_en, TX.w_beta, SIM.mid_period, SIM.ldpc_en);
+                [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(TX);
             end
             
             % Add CFO error, assume [-5, 5] ppm per Tx/Rx device
@@ -144,9 +145,9 @@ for i_mcs = 1:length(SIM.mcs_vec)
             
             % Receiver model (MEX or M)
             if SIM.use_mex
-                err = sim_rx_mex(PHY, rx_wf, s0_len, data_f_mtx, RX.t_depth, RX.pdet_thold);
+                err = sim_rx_mex(rx_wf, s0_len, data_f_mtx, RX.t_depth, RX.pdet_thold, TX.ppdu_fmt, TX.mid_period, TX.ldpc_en);
             else
-                err = sim_rx(PHY, rx_wf, s0_len, data_f_mtx, RX.t_depth, RX.pdet_thold, SIM.mid_period, SIM.ldpc_en);
+                err = sim_rx(rx_wf, s0_len, data_f_mtx, RX.t_depth, RX.pdet_thold, TX.ppdu_fmt, TX.mid_period, TX.ldpc_en);
             end
             
             % Display debugging information
@@ -190,10 +191,19 @@ for i_mcs = 1:length(SIM.mcs_vec)
     drawnow; xlabel('SNR (dB)'); ylabel('PER');
     grid on; legend; hold on;
     
+    % Find throughput efficiency factor (affected by midamble periodicity)
+    if (TX.mid_period == 0)
+        eff = 1;
+    else
+        eff = TX.mid_period/(TX.mid_period + 1);
+    end
+    
+    % Goodput calculation
+    drate = eff*PHY.n_sd*PHY.n_dbps./PHY.n_cbps.*PHY.n_bpscs/8e-6*1e-6;
+    avgTHR(:, i_mcs) = (1 - avgPER).*repmat(drate, size(avgPER, 1), 1);
+
     % Plot throughput
     subplot(1, 2, 2)
-    drate = 48.*PHY.n_dbps./PHY.n_cbps.*PHY.n_bpscs/8e-6*1e-6;
-    avgTHR(:, i_mcs) = (1 - avgPER).*repmat(drate, size(avgPER, 1), 1);
     plot(SIM.snr, avgTHR(:, i_mcs), 'DisplayName', ['MCS' num2str(TX.mcs)]);
     drawnow; xlabel('SNR (dB)'); ylabel('Throughput (Mbps)');
     grid on; legend; hold on;

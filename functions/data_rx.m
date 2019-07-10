@@ -1,9 +1,9 @@
-function descr_msg = data_rx(PHY, SIG_CFG, rx_wf, idx, h_est, data_f_mtx, t_depth, r_cfo, mid_period, ldpc_en)
+function descr_msg = data_rx(PHY, LDPC, SIG_CFG, rx_wf, idx, h_est, data_f_mtx, t_depth, r_cfo, mid_period, ldpc_en)
 %DATA_RX Receiver processing of all DATA OFDM symbols
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 11-February-2019
+%   August 2018; Last revision: 10-July-2019
 
 % Copyright (C) u-blox
 %
@@ -24,7 +24,7 @@ function descr_msg = data_rx(PHY, SIG_CFG, rx_wf, idx, h_est, data_f_mtx, t_dept
 % Purpose: V2X baseband simulation model
 
 % Needed for code generation
-coder.varsize('sym_out', [48 1], [0 0]);
+coder.varsize('sym_out', [52 1], [1 0]);
 
 % Calculate latency of (fake) channel tracking feedback
 h_delay = ceil(96/PHY.n_dbps) + 1;
@@ -36,7 +36,7 @@ h_est_mtx(:, 1:h_delay) = repmat(h_est, [1 h_delay]);
 % Loop for all OFDM symbols
 data_bcc_vec = zeros(SIG_CFG.n_dbps, SIG_CFG.n_sym);
 data_ldpc_vec = zeros(SIG_CFG.n_cbps, SIG_CFG.n_sym);
-evm_mtx = zeros(48, SIG_CFG.n_sym);
+evm_mtx = zeros(SIG_CFG.n_sd, SIG_CFG.n_sym);
 for i_sym = 1:SIG_CFG.n_sym
     
     % Get waveform for current OFDM symbol
@@ -49,11 +49,11 @@ for i_sym = 1:SIG_CFG.n_sym
         % If this is a midamble symbol perform channel estimation
         if (mod(i_sym, mid_period) == 0)
             % LTF f-domain represenation (including DC-subcarrier & guard bands)
-            ltf_f = [zeros(1,6), 1 1 -1 -1 1 1 -1 1 -1 1 1 1 1 1 1 -1 -1 1 1 -1 1 -1 1 1 1 1 0 ...
-                1 -1 -1 1 1 -1 1 -1 1 -1 -1 -1 -1 -1 1 1 -1 -1 1 -1 1 -1 1 1 1 1, zeros(1, 5)].';
+            ltf_f = [zeros(1,4), 1 1 1 1 -1 -1 1 1 -1 1 -1 1 1 1 1 1 1 -1 -1 1 1 -1 1 -1 1 1 1 1 0 ...
+                1 -1 -1 1 1 -1 1 -1 1 -1 -1 -1 -1 -1 1 1 -1 -1 1 -1 1 -1 1 1 1 1 1 1, zeros(1, 3)].';
             
             % FFT
-            y = dot11_fft(wf_in, 64)*sqrt(52)/64;
+            y = dot11_fft(wf_in([9:64 1:8], 1), 64)*sqrt(PHY.n_sd + 4)/64;
             
             % Least-Squares channel estimation
             h_est_mtx(:, i_sym) = y./ltf_f;
@@ -71,7 +71,7 @@ for i_sym = 1:SIG_CFG.n_sym
     
     % Perform FFT
     y = complex(zeros(64, 1));
-    y(:) = dot11_fft(wf_in([9:64 1:8], 1), 64)*sqrt(52)/64;
+    y(:) = dot11_fft(wf_in([9:64 1:8], 1), 64)*sqrt(PHY.n_sd + 4)/64;
     
     % If midamble is disabled, find (genie) channel estimate from received & transmitted waveforms
     if (mid_period == 0)
@@ -86,7 +86,7 @@ for i_sym = 1:SIG_CFG.n_sym
     end
     
     % Frequency-domain smoothing
-    h_est = fd_smooth(h_est);
+    h_est = fd_smooth(h_est, SIG_CFG.n_sd);
 
     % Pilot equalization
     x_p = pol_sign*y(PHY.pilot_idx, 1)./h_est(PHY.pilot_idx, 1).*[1 1 1 -1].'*exp(-1j*r_cfo);
@@ -96,15 +96,20 @@ for i_sym = 1:SIG_CFG.n_sym
     
     % Data equalization with CFO compensation
     sym_out = y(PHY.data_idx, 1)./h_est(PHY.data_idx, 1)*exp(-1j*r_cfo);
-       
+    
     % SNR input to Viterbi
     snr = abs(h_est(PHY.data_idx, 1)).^2;
+    
+    % LDPC tone demapping (data & SNR vectors)
+    if (PHY.ldpc_en)
+        [sym_out, snr] = ldpc_tonedemap(sym_out, snr, 64);
+    end
     
     % LLR demapping
     llr_in = llr_demap(sym_out.', SIG_CFG.n_bpscs, snr);
     
     % Deinterleaving
-    x_data = deinterleaver(llr_in, SIG_CFG.n_bpscs, SIG_CFG.n_cbps);
+    x_data = deinterleaver(llr_in, SIG_CFG.n_bpscs, SIG_CFG.n_cbps, SIG_CFG.ppdu_fmt);
     
     % Process through Viterbi decoder or store for LDPC processing
     if ldpc_en
@@ -121,7 +126,7 @@ end
 
 % LDPC decoder or last pass of Viterbi
 if ldpc_en
-    data_out = ldpc_dec(PHY.LDPC, [data_ldpc_vec(:)*2^PHY.n_bpscs; zeros(PHY.n_cbps,1)]);
+    data_out = ldpc_dec(LDPC, [data_ldpc_vec(:); zeros(PHY.n_cbps,1)]);
     % Descrambling
     descr_msg = descrambler_rx(logical(data_out), true);
 else

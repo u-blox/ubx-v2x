@@ -2,7 +2,7 @@
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 19-February-2019
+%   August 2018; Last revision: 10-July-2019
 
 % Copyright (C) u-blox
 %
@@ -23,13 +23,14 @@
 % Purpose: V2X baseband simulation model
 
 addpath('./functions')
+clc
 
 tic
 disp('Creating MEX for sim_tx')
-codegen -args {0, 0, true, 0} sim_tx -o ./mex/sim_tx_mex -config:mex -report
+codegen -args {TX} sim_tx -o ./mex/sim_tx_mex -config:mex -report
 toc
 
 tic
 disp('Creating MEX for sim_rx')
-codegen -args {PHY, coder.typeof(1j, [inf 1], [1 0]), 0, coder.typeof(1j, [64 1400], [0 1]), 0, 0} sim_rx -o ./mex/sim_rx_mex -config:mex -report
+codegen -args {coder.typeof(1j, [inf 1], [1 0]), 0, coder.typeof(1j, [64 1400], [0 1]), 0, 0, 0, 0, true} sim_rx -o ./mex/sim_rx_mex -config:mex -report
 toc

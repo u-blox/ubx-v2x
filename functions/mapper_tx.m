@@ -3,7 +3,7 @@ function out = mapper_tx(in, q)
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 19-February-2019
+%   August 2018; Last revision: 10-July-2019
 
 % Copyright (C) u-blox
 %
@@ -54,6 +54,13 @@ switch q
         qbits = bitand(q_vec, 7);
         mod_table = (w(ibits + 1) + 1j*w(qbits + 1));
         norm_factor = 7/sqrt(42);
+        
+    case 8 % 256-QAM
+        w = (1/15)*[-15 -13 -9 -11 -1 -3 -7 -5 15 13 9 11 1 3 7 5].';
+        ibits = floor(q_vec/16);
+        qbits = bitand(q_vec, 15);
+        mod_table = (w(ibits + 1) + 1j*w(qbits + 1));
+        norm_factor = 15/sqrt(170);
         
     otherwise % Needed for code-generation
         mod_table = complex(zeros(0, 1));

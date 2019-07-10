@@ -1,9 +1,9 @@
-function [PHY, data_msg] = tx_phy_params(mcs, payload_len, ldpc_en)
+function [PHY, LDPC, data_msg] = tx_phy_params(mcs, payload_len, ppdu_fmt, ldpc_en, mid_period)
 %TX_PHY_PARAMS Initializes PHY layer parameters
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 30-August-2018
+%   August 2018; Last revision: 10-July-2019
 
 % Copyright (C) u-blox
 %
@@ -24,8 +24,11 @@ function [PHY, data_msg] = tx_phy_params(mcs, payload_len, ldpc_en)
 % Purpose: V2X baseband simulation model
 
 % Store MCS / payload length
-PHY.mcs     = mcs;
-PHY.length  = payload_len;
+PHY.mcs         = mcs;
+PHY.length      = payload_len;
+PHY.ppdu_fmt    = ppdu_fmt;
+PHY.ldpc_en     = ldpc_en;
+PHY.mid_period  = mid_period;
 
 % Initialize scrambler with a 7-bit non-allzero PN sequence (random or pre-set)
 PHY.pn_seq = logical(de2bi(randi([1 127]), 7, 'left-msb'))';
@@ -42,16 +45,34 @@ PHY.polarity_sign = [1,1,1,1,-1,-1,-1,1,-1,-1,-1,-1,1,1,-1,1,-1,-1,1,1,-1,1,1,-1
 % Starting index for pilot polarity index
 PHY.pilot_offset = 1;
 
-% Data subcarrier indices
-PHY.data_idx = [-26:-22 -20:-8 -6:-1 1:6 8:20 22:26].' + 33;
+% SIG data subcarrier indices
+PHY.sig_idx = [-26:-22 -20:-8 -6:-1 1:6 8:20 22:26].' + 33;
 
-% Number of data subcarriers
-PHY.n_sd = 48;
+% Legacy (1) or NGV (2) PPDU format
+if (ppdu_fmt == 1)
+    % Number of data subcarriers
+    n_sd = 48;
+    
+    % Data subcarrier indices
+    PHY.data_idx = [-26:-22 -20:-8 -6:-1 1:6 8:20 22:26].' + 33;
+    
+elseif (ppdu_fmt == 2)
+    
+    % Number of data subcarriers
+    n_sd = 52;
+    
+    % Data subcarrier indices
+    PHY.data_idx = [-28:-22 -20:-8 -6:-1 1:6 8:20 22:28].' + 33;
+else
+    % Prevent errors in code generation
+    n_sd = 0;
+    PHY.data_idx = 0;
+end
 
 % MCS tables for coding rate (numerator / denominator) and bits per modulation symbol
-rate_num = [1 3 1 3 1 3 2 3];
-rate_denom = [2 4 2 4 2 4 3 4];
-n_bpscs = [1 1 2 2 4 4 6 6];
+rate_num = [1 3 1 3 1 3 2 3 2 3];
+rate_denom = [2 4 2 4 2 4 3 4 3 4];
+n_bpscs = [1 1 2 2 4 4 6 6 8 8];
 
 % Find code rate numerator/denominator & bits per modulation symbol
 PHY.r_num   = rate_num(mcs + 1);
@@ -59,20 +80,25 @@ PHY.r_denom = rate_denom(mcs + 1);
 PHY.n_bpscs = n_bpscs(mcs + 1);
 
 % Calculate coded/uncoded number of bits per OFDM symbol
-PHY.n_cbps  = 48*n_bpscs(mcs + 1);
-PHY.n_dbps  = 48*n_bpscs(mcs + 1)*rate_num(mcs + 1)/rate_denom(mcs + 1);
+n_cbps  = n_sd*n_bpscs(mcs + 1);
+n_dbps  = n_sd*n_bpscs(mcs + 1)*rate_num(mcs + 1)/rate_denom(mcs + 1);
+
+% Extra step to enable code generation
+PHY.n_sd    = n_sd;
+PHY.n_cbps  = n_cbps;
+PHY.n_dbps  = n_dbps;
 
 % Calculate number of OFDM symbols, different value for LDPC/BCC
+PHY.n_sym = ceil((16 + 8*payload_len)/n_dbps);
+LDPC = ldpc_enc_params(payload_len, n_dbps, n_cbps);
 if ldpc_en
-    PHY.n_sym = ceil((16 + 8*payload_len)/PHY.n_dbps);
-    PHY.LDPC = ldpc_enc_params(payload_len, PHY.n_dbps, PHY.n_cbps);
-    PHY.n_sym = PHY.LDPC.Nsym;
+    PHY.n_sym = LDPC.Nsym;
 else
-    PHY.n_sym = ceil((16 + 8*payload_len + 6)/PHY.n_dbps);
+    PHY.n_sym = ceil((16 + 8*payload_len + 6)/n_dbps);
 end
 
 % Create pseudo-random PSDU binary message (account for CRC-32)
-tmp_msg = randi([0 255], payload_len - 4, 1)'; 
+tmp_msg = randi([0 255], payload_len - 4, 1)';
 
 % Calculate CRC-32
 data_msg_crc = crc32(tmp_msg);

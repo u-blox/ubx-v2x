@@ -3,7 +3,7 @@ function llr_out = llr_demap(sym_in, q, snr_vec)
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 30-August-2018
+%   August 2018; Last revision: 10-July-2019
 
 % Copyright (C) u-blox
 %
@@ -48,6 +48,12 @@ switch q
         xi = imag(sym_in)*sqrt(42);
         llr_out(1:3, :) = qam64_demap(xr)/42;
         llr_out(4:6, :) = qam64_demap(xi)/42;
+        
+    case 8 % 256-QAM
+        xr = real(sym_in)*sqrt(170);
+        xi = imag(sym_in)*sqrt(170);
+        llr_out(1:4, :) = qam256_demap(xr)/170;
+        llr_out(5:8, :) = qam256_demap(xi)/170;
 end
 
 % Negative LLR values

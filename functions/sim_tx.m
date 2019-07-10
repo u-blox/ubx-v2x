@@ -1,9 +1,9 @@
-function [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(mcs, payload_len, window_en, w_beta, mid_period, ldpc_en)
+function [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(TX)
 %SIM_RX High-level transmitter function
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 19-February-2019
+%   August 2018; Last revision: 10-July-2019
 
 % Copyright (C) u-blox
 %
@@ -24,19 +24,26 @@ function [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(mcs, payload_len, window_en
 % Purpose: V2X baseband simulation model
 
 % Create structure with PHY parameters
-[PHY, data_msg] = tx_phy_params(mcs, payload_len, ldpc_en);
+[PHY, LDPC, data_msg] = tx_phy_params(TX.mcs, TX.payload_len, TX.ppdu_fmt, TX.ldpc_en, TX.mid_period);
 
 % Get STF waveform
-stf_wf = stf_tx(w_beta);
+stf_wf = stf_tx(TX.w_beta);
 
 % Get LTF waveform
-ltf_wf = ltf_tx(w_beta);
+ltf_wf = ltf_tx(TX.w_beta);
 
 % Get SIG waveform
-sig_wf = sig_tx(PHY, w_beta);
+sig_wf = sig_tx(PHY, TX.w_beta);
+
+% NGV-LTF
+if (TX.ppdu_fmt == 2)
+    ngv_ltf_wf = ngv_ltf_tx(TX.w_beta);
+else
+    ngv_ltf_wf = [];
+end
 
 % Different padding for LDPC/BCC
-if ldpc_en
+if PHY.ldpc_en
     pad_len = 0;
     
     % Add service and zero-padding (pad + tail)
@@ -50,12 +57,12 @@ else
 end
 
 % Generate data waveform
-[data_wf, data_f_mtx] = data_tx(PHY, pad_len, padding_out, w_beta, mid_period, ldpc_en);
+[data_wf, data_f_mtx] = data_tx(PHY, LDPC, pad_len, padding_out, TX.w_beta);
 
 % Concatenate output waveform
-tx_wf = [stf_wf; ltf_wf; sig_wf; data_wf];
+tx_wf = [stf_wf; ltf_wf; sig_wf; ngv_ltf_wf; data_wf];
 
 % Apply time-domain windowing
-tx_wf = apply_time_window(tx_wf, window_en);
+tx_wf = apply_time_window(tx_wf, TX.window_en);
 
 end

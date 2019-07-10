@@ -3,7 +3,7 @@ function out = pa_model(in, enabled)
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   February 2019; Last revision: 19-February-2019
+%   February 2019; Last revision: 10-July-2019
 
 % Copyright (C) u-blox
 %
@@ -53,4 +53,6 @@ if enabled
     
     % Apply the model to the transmit waveform
     out = pa_obj(in)/db2mag(pa_bo);
+end
+
 end

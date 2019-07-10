@@ -3,7 +3,7 @@ function [SIG_CFG, r_cfo] = sig_rx(r, h_est, data_idx, pilot_idx, ldpc_en)
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 30-August-2018
+%   August 2018; Last revision: 10-July-2019
 
 % Copyright (C) u-blox
 %
@@ -36,7 +36,9 @@ SIG_CFG = struct(...
     'n_bpscs', 0, ...
     'n_cbps', 0, ...
     'n_dbps', 0, ...
-    'n_sym', 0);
+    'n_sym', 0, ...
+    'ppdu_fmt', 0, ...
+    'n_sd', 0);
 
 % Create system object
 if isempty(vit_obj)
@@ -52,25 +54,25 @@ y = complex(zeros(64, 1));
 y(:) = dot11_fft(r([9:64 1:8], 1), 64)*sqrt(52)/64;
 
 % Frequency-domain smoothing
-h_est = fd_smooth(h_est);
+h_est = fd_smooth(h_est, 48);
 
 % Pilot equalization
 x_p = y(pilot_idx, 1)./h_est(pilot_idx, 1).*[1 1 1 -1].';
 
 % Residual CFO estimation
 r_cfo = mean(angle(x_p));
-   
+
 % Data equalization with CFO compensation
 x_d = y(data_idx, 1)./h_est(data_idx, 1)*exp(-1j*r_cfo);
 
 % SNR input to Viterbi
 snr = abs(h_est(data_idx, 1));
-	
+
 % LLR demapping
 llr_in = llr_demap(x_d.', 1, snr);
 
 % Deinterleaving
-x_data = deinterleaver(llr_in, 1, 48);
+x_data = deinterleaver(llr_in, 1, 48, 1);
 
 % Viterbi decoding
 sig_msg = step(vit_obj, x_data.');

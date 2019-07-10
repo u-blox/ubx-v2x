@@ -3,7 +3,7 @@ function out = apply_time_window(in, enabled)
 %
 %   Author: Ioannis Sarris, u-blox
 %   email: ioannis.sarris@u-blox.com
-%   February 2019; Last revision: 19-February-2019
+%   February 2019; Last revision: 10-July-2019
 
 % Copyright (C) u-blox
 %
@@ -39,4 +39,6 @@ if enabled
     
     % Perform widnowing on preamble & data fields
     out(idx + 1, :) = (out(idx + 1, :) + out(idx - 63, :))/2;
+end
+
 end
