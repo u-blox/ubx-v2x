@@ -92,10 +92,13 @@ for i_sym = 0:PHY.n_sym - 1
                 a1 = reshape(fec_out, 4, []);
                 a2 = a1([1 2 3], :);
                 fec_out = a2(:);
-                
             case 3
                 a1 = reshape(fec_out, 6, []);
                 a2 = a1([1 2 3 6], :);
+                fec_out = a2(:);
+            case 5
+                a1 = reshape(fec_out, 10, []);
+                a2 = a1([1 2 3 6 7 10], :);
                 fec_out = a2(:);
         end
     end

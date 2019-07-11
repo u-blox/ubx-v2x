@@ -53,6 +53,10 @@ switch PHY.mcs
         sig_rate = [0 0 0 1];
     case 7
         sig_rate = [0 0 1 1];
+    case 8
+        sig_rate = [0 0 1 0];
+    case 9
+        sig_rate = [0 1 0 0];        
     otherwise % Needed for code generation
         sig_rate = [0 0 0 0];
 end

@@ -27,7 +27,7 @@ function bits_out = bcc_dec(llr_in, r_num, bcc_init)
 persistent vit_dec
 
 % Needed for code generation
-coder.varsize('bits_out', [216 1], [1 0]);
+coder.varsize('bits_out', [288 1], [1 0]);
 
 % Create or reset system object
 if isempty(vit_dec)
@@ -48,6 +48,9 @@ switch r_num
     case 3
         punct_pat = logical([1 1 1 0 0 1]);
         f = 2*3/4;
+    case 5
+        punct_pat = logical([1 1 1 0 0 1 1 0 0 1]);
+        f = 2*5/6;
     otherwise
         punct_pat = true;
         f = 2*1/2;

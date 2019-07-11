@@ -23,6 +23,9 @@ function cod_bits = ldpc_enc(LDPC, data_in)
 % Project: ubx-v2x
 % Purpose: V2X baseband simulation model
 
+% Store LDPC object to avoid re-generation
+persistent ldpc_code
+
 % LDPC parameters
 Ncw = LDPC.Ncw;
 K0 = LDPC.K0;
@@ -35,9 +38,15 @@ vCwLen = LDPC.vCwLen;
 Lldpc = LDPC.Lldpc;
 rate = LDPC.rate;
 
-% Initialize LDPC object
-tx_ldpc_code = LDPCCode(0, 0);
-tx_ldpc_code.load_wifi_ldpc(Lldpc, rate);
+% Generate LDPC object
+if isempty(ldpc_code)
+    ldpc_code = LDPCCode(0, 0);
+end
+
+% Configure LDPC object
+if ((ldpc_code.N ~= Lldpc) || (ldpc_code.K ~= floor(Lldpc*(1 - rate))))
+    ldpc_code.load_wifi_ldpc(Lldpc, rate);
+end
 
 % Initialize indices & variables
 idx1 = 0;
@@ -55,7 +64,7 @@ for i_cw = 1:Ncw
     idx1 = idx1 + n_info;
     
     % LDPC encoding
-    cod_bits_temp = tx_ldpc_code.encode_bits(unc_bits);
+    cod_bits_temp = ldpc_code.encode_bits(unc_bits);
     
     % Remove shortening bits
     inf_bits = cod_bits_temp(1:K0 - vNshrt(i_cw));
@@ -68,7 +77,7 @@ for i_cw = 1:Ncw
     if vNpunc(i_cw) > 0
         % Assemble LDPC codeword
         cod_bits((1:vCwLen(i_cw)) + idx2) = temp_cw;
-    else    
+    else
         % Integer repetition bits (for 11n compatibility)
         if vNrepInt(i_cw) > 0
             rep_bits = repmat(temp_cw, vNrepInt(i_cw), 1);

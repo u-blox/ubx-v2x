@@ -23,6 +23,9 @@ function unc_bits = ldpc_dec(LDPC, llr_in)
 % Project: ubx-v2x
 % Purpose: V2X baseband simulation model
 
+% Store LDPC object to avoid re-generation
+persistent ldpc_code
+
 % LDPC parameters
 Ncw = LDPC.Ncw;
 K0 = LDPC.K0;
@@ -39,9 +42,15 @@ idx1 = 1;
 idx2 = 1;
 unc_bits = zeros(Ncw*K0 - Nshrt, 1);
 
-% Initialize LDPC object
-rx_ldpc_code = LDPCCode(0, 0);
-rx_ldpc_code.load_wifi_ldpc(Lldpc, rate);
+% Generate LDPC object
+if isempty(ldpc_code)
+    ldpc_code = LDPCCode(0, 0);
+end
+
+% Configure LDPC object
+if ((ldpc_code.N ~= Lldpc) || (ldpc_code.K ~= floor(Lldpc*(1 - rate))))
+    ldpc_code.load_wifi_ldpc(Lldpc, rate);
+end
 
 % Loop for LDPC codewords
 for i_cw = 1:Ncw
@@ -51,7 +60,7 @@ for i_cw = 1:Ncw
     short_len = vNshrt(i_cw);
     
     % Parity length
-    par_len = rx_ldpc_code.M - LDPC.vNpunc(i_cw);
+    par_len = ldpc_code.M - LDPC.vNpunc(i_cw);
     
     % Check if CW length is incorrectly received to avoid errors
     if length(llr_in) >= (idx1 + vCwLen(i_cw) - 1)
@@ -95,7 +104,7 @@ for i_cw = 1:Ncw
         cod_bits(inf_bits_len + short_len + 1:inf_bits_len + short_len + par_len) = X_cw(inf_bits_len + 1:inf_bits_len + par_len);
         
         % LDPC decoding
-        [unc_bits_temp, ~] = rx_ldpc_code.decode_llr(cod_bits, 50, 1);
+        [unc_bits_temp, ~] = ldpc_code.decode_llr(cod_bits, 50, 1);
         
         % Concatenate uncoded bits to a vector
         unc_bits(idx2:idx2 + inf_bits_len - 1) = unc_bits_temp(1:inf_bits_len);
