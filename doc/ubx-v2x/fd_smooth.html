@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of fd_smooth</title>
+  <meta name="keywords" content="fd_smooth">
+  <meta name="description" content="FD_SMOOTH Frequency-domain smoothing">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; fd_smooth.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>fd_smooth
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>FD_SMOOTH Frequency-domain smoothing</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function h_out = fd_smooth(h_in, n_sd) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">FD_SMOOTH Frequency-domain smoothing
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="data_rx.html" class="code" title="function [descr_msg] = data_rx(PHY, RX, rx_wf, idx0, h_est, data_f_mtx, r_cfo, snr_avg)">data_rx</a>	DATA_RX Receiver processing of all DATA OFDM symbols</li><li><a href="sig_pre_rx.html" class="code" title="function [x_p, x_d_cfo, snr, r_phase_off, llr_in] = sig_pre_rx(r, h_est, data_idx, pilot_idx, n_chan, prev_cfo_corr, new_poff_weight)">sig_pre_rx</a>	SIG_PRE_RX Get f-domain SIG messages (L-SIG, RL-SIG, NGV-SIG, RNGV-SIG) for preamble autodetection and as input to decoder</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function h_out = fd_smooth(h_in, n_sd)</a>
+0002 <span class="comment">%FD_SMOOTH Frequency-domain smoothing</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">% Number of guard subcarriers</span>
+0027 n_fft = size(h_in, 1);
+0028 n_rx = size(h_in, 2);
+0029 
+0030 <span class="comment">% 10 MHz mode</span>
+0031 <span class="keyword">if</span> (n_fft == 64)
+0032     
+0033     k = 6;
+0034     <span class="keyword">if</span> (n_sd == 52)
+0035         k = 4;
+0036     <span class="keyword">end</span>
+0037     
+0038     <span class="comment">% Replicate missing values to enable smoothing</span>
+0039     h_in(1:k, :) = h_in((k + 1)*ones(1, k), :);
+0040     h_in(33, :) = (h_in(32, :) + h_in(34, :))/2;
+0041     h_in((n_fft+2 - k):n_fft, :) = h_in((n_fft+1 - k)*ones(1, k - 1), :);
+0042     
+0043     <span class="comment">% Moving-average smoothing</span>
+0044     h_out = complex(zeros(n_fft, n_rx));
+0045     
+0046     <span class="comment">% Apply length-3 window</span>
+0047     h_out(2:n_fft-1, :) = h_in(1:n_fft-2, :)*.15 + h_in(2:n_fft-1, :)*.7 + h_in(3:n_fft, :)*.15;
+0048 <span class="keyword">else</span>
+0049     <span class="comment">% 20 MHz mode</span>
+0050     
+0051     <span class="comment">% Replicate missing values to enable smoothing</span>
+0052     <span class="keyword">if</span> (n_sd == 48)
+0053         <span class="comment">% 10 MHz legacy SIG or data fields, possibly in both subchannels</span>
+0054         h_in(60, :) = h_in(59, :);
+0055         h_in(70, :) = h_in(71, :);
+0056         h_in(61:69, :) = 0;
+0057         k = 6;
+0058     <span class="keyword">elseif</span> (n_sd == 52)
+0059         <span class="comment">% 10 MHz NGV waveform received while in 20 MHz reception mode</span>
+0060         h_in(62, :) = h_in(61, :);
+0061         h_in(68, :) = h_in(69, :);
+0062         h_in(62:68, :) = 0;
+0063         k = 4;
+0064     <span class="keyword">else</span>
+0065         <span class="comment">% 20 MHz NGV waveform</span>
+0066         h_in(65, :) = (h_in(63, :) + h_in(67, :))/2;
+0067         h_in(64, :) = (h_in(63, :) + h_in(65, :))/2;
+0068         h_in(66, :) = (h_in(65, :) + h_in(67, :))/2;
+0069         k = 6;
+0070     <span class="keyword">end</span>
+0071     h_in(97, :) = (h_in(96, :) + h_in(98, :))/2;
+0072     
+0073     h_in(1:k, :) = h_in((k + 1)*ones(1, k), :);
+0074     h_in(33, :) = (h_in(32, :) + h_in(34, :))/2;
+0075     h_in((n_fft + 2 - k):n_fft, :) = h_in((n_fft + 1 - k)*ones(1, k - 1), :);
+0076     
+0077     <span class="comment">% Moving-average smoothing</span>
+0078     h_out = complex(zeros(n_fft, n_rx));
+0079     
+0080     <span class="comment">% Apply length-3 window</span>
+0081     h_out(2:n_fft - 1, :) = h_in(1:n_fft - 2, :)*.15 + h_in(2:n_fft - 1, :)*.7 + h_in(3:n_fft, :)*.15;
+0082 <span class="keyword">end</span>
+0083 
+0084 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

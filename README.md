@@ -1,26 +1,11 @@
 # ubx-v2x
 ## V2X baseband simulation model
 
-ubx-v2x is a simulation model of a baseband 802.11p transceiver which can be used for research on V2X communications. It provides a reference implementation of all the mandatory transmitter and receiver processing blocks. It also includes implementations of the V2V channel models summarized in [1], originating from test trials described in [2-4].
+ubx-v2x is a simulation model of a baseband 802.11p/bd transceiver which can be used for research on V2X communications. It provides a reference implementation of all the mandatory transmitter and receiver processing blocks. It also includes implementations of the V2V channel models summarized in [1], originating from test trials described in [2-4].
 
 ## Introduction
 
 The goal of ubx-v2x is to stimulate research on algorithms for current and next-generation V2X communications systems. The main advantage of this model compared to existing 802.11 implementations is the provision of a channel tracking mechanism which is crucial in investigating high-mobility scenarios.
-
-A top-level dependency graph of the functions is given below.
-
-<div align="center">
-  <img src="doc/top_level_graph.png" />
-</div>
-
-## Quick Start
-
-Use `batch_sim` to initiate a Monte-Carlo simulation which goes through MCS 0-7 and SNR levels from 0 to 25 dB.
-
-<div align="center">
-  <img src="figures/PER_300B_AWGN.png" />
-  <p>Example PER vs SNR results for an AWGN channel.</p>
-</div>
 
 ## MEX Acceleration (optional)
 

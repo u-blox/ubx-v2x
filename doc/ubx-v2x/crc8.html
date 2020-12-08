@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of crc8</title>
+  <meta name="keywords" content="crc8">
+  <meta name="description" content="CRC8 Computes CRC8 on an input bitstream">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; crc8.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>crc8
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>CRC8 Computes CRC8 on an input bitstream</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function out = crc8(in_bits) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">CRC8 Computes CRC8 on an input bitstream
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="ldpc_dec.html" class="code" title="function unc_bits = ldpc_dec(LDPC, llr_in, ldpc_cfg)">ldpc_dec</a>	LDPC_DEC Decodes an LLR stream with LDPC decoding</li><li><a href="ngv_sig_rx.html" class="code" title="function [NGV_SIG_CFG] = ngv_sig_rx(x_d_cfo, snr)">ngv_sig_rx</a>	NGV_SIG_RX NGV-SIG message receiver</li><li><a href="ngv_sig_tx.html" class="code" title="function ngv_sig_wf = ngv_sig_tx(PHY, w_beta, n_chan)">ngv_sig_tx</a>	NGV_SIG_TX NGV_SIG message transmitter/parser</li><li><a href="sim_rx.html" class="code" title="function [err] = sim_rx(rx_wf, data_f_mtx, RX, TX, s0_len)">sim_rx</a>	SIM_RX High-level receiver function</li><li><a href="tx_phy_params.html" class="code" title="function [PHY, data_msg] = tx_phy_params(mode, mcs, tx_payload_len, ppdu_fmt, mid, n_ss, ngvltf_fmt, n_chan, rx_lsig_len, rx_ngvsig_extra_sym)">tx_phy_params</a>	TX_PHY_PARAMS Initializes PHY layer parameters</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function out = crc8(in_bits)</a>
+0002 <span class="comment">%CRC8 Computes CRC8 on an input bitstream</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">% Example:</span>
+0027 <span class="comment">% in_bits = [1 1 1 1 0 0 0 1 0 0 1 0 0 1 1 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 0 0];</span>
+0028 <span class="comment">% output bits , where B7 is output first, are {1 0 1 0 1 0 0 0}.</span>
+0029 
+0030 <span class="comment">% Example 2 (.11ax HE SIG 4-bit):</span>
+0031 <span class="comment">% in_bits = [1 1 0 1 1 1 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 1 0 0 1 1 0 1 0];</span>
+0032 <span class="comment">% the output bits , where B7 is output first, are {0 1 1 1}.</span>
+0033 
+0034 <span class="comment">% Convert input data into booleans</span>
+0035 data = logical(in_bits);
+0036 
+0037 <span class="comment">% Initialize shift register to all ones</span>
+0038 register = uint8(255);
+0039 
+0040 <span class="comment">% Compute CRC-8 value</span>
+0041 <span class="keyword">for</span> i = 1:length(data)
+0042     feedback_bit = bitxor(logical(bitget(register, 8)), data(i));
+0043     feedback_vec = feedback_bit*7;
+0044     register = bitshift(register, 1);
+0045     register = bitxor(register, feedback_vec);
+0046 <span class="keyword">end</span>
+0047 
+0048 out = bitcmp(register);
+0049 
+0050 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

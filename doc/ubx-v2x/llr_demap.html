@@ -1,0 +1,137 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of llr_demap</title>
+  <meta name="keywords" content="llr_demap">
+  <meta name="description" content="LLR_DEMAP LLR demapping">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; llr_demap.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>llr_demap
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>LLR_DEMAP LLR demapping</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function llr_out = llr_demap(sym_in, q, snr_vec) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">LLR_DEMAP LLR demapping
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="qam16_demap.html" class="code" title="function llr_out = qam16_demap(sym_in)">qam16_demap</a>	QAM16_DEMAP Performs demapping of QAM-16 modulation</li><li><a href="qam256_demap.html" class="code" title="function llr_out = qam256_demap(sym_in)">qam256_demap</a>	QAM256_DEMAP LLR demapping for 256-QAM</li><li><a href="qam64_demap.html" class="code" title="function llr_out = qam64_demap(sym_in)">qam64_demap</a>	QAM64_DEMAP Performs demapping of QAM-64 modulation</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="data_rx.html" class="code" title="function [descr_msg] = data_rx(PHY, RX, rx_wf, idx0, h_est, data_f_mtx, r_cfo, snr_avg)">data_rx</a>	DATA_RX Receiver processing of all DATA OFDM symbols</li><li><a href="ngv_sig_rx.html" class="code" title="function [NGV_SIG_CFG] = ngv_sig_rx(x_d_cfo, snr)">ngv_sig_rx</a>	NGV_SIG_RX NGV-SIG message receiver</li><li><a href="sig_pre_rx.html" class="code" title="function [x_p, x_d_cfo, snr, r_phase_off, llr_in] = sig_pre_rx(r, h_est, data_idx, pilot_idx, n_chan, prev_cfo_corr, new_poff_weight)">sig_pre_rx</a>	SIG_PRE_RX Get f-domain SIG messages (L-SIG, RL-SIG, NGV-SIG, RNGV-SIG) for preamble autodetection and as input to decoder</li><li><a href="sig_rx.html" class="code" title="function [SIG_CFG] = sig_rx(x_d, snr)">sig_rx</a>	SIG_RX SIG message receiver/deparser</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function llr_out = llr_demap(sym_in, q, snr_vec)</a>
+0002 <span class="comment">%LLR_DEMAP LLR demapping</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 
+0027 <span class="keyword">if</span> q == 0.5
+0028     <span class="comment">% MCS 10, BPSK-DCM</span>
+0029     DCM = true;
+0030     <span class="comment">% The number of output data symbols is only half of the number of subcarriers</span>
+0031     n_sd = size(sym_in, 2) / 2;
+0032     k = 0:n_sd - 1;
+0033     <span class="comment">% Initialize llr_out matrix</span>
+0034     llr_out = zeros(1, n_sd);
+0035 <span class="keyword">else</span>
+0036     <span class="comment">% default, all other modulation schemes MCS 0-9</span>
+0037     DCM = false;
+0038     k = 0; <span class="comment">% for codegen</span>
+0039     n_sd = 0; <span class="comment">% for codegen</span>
+0040     <span class="comment">% Initialize llr_out matrix</span>
+0041     llr_out = zeros(q, size(sym_in, 2));
+0042 <span class="keyword">end</span>
+0043 
+0044 <span class="keyword">switch</span> q
+0045     <span class="keyword">case</span> 0.5 <span class="comment">% BSPK-DCM</span>
+0046         sym_A = 4*sym_in(1:n_sd);
+0047         sym_B = 4*exp(-1j*(k + n_sd)*pi).*sym_in(n_sd + 1:2*n_sd);
+0048         sym_A_scaled = sym_A.*snr_vec(1:n_sd, 1).';
+0049         sym_B_scaled = sym_B.*snr_vec(n_sd + 1:2*n_sd, 1).';
+0050         llr_out(1, :) = real(sym_A_scaled + sym_B_scaled);
+0051         llr_out = -llr_out'; <span class="comment">% Negative LLR values</span>
+0052     <span class="keyword">case</span> 1 <span class="comment">% BPSK</span>
+0053         xr = real(sym_in);
+0054         llr_out(1, :) = 4*xr;
+0055         
+0056     <span class="keyword">case</span> 2 <span class="comment">% QPSK</span>
+0057         xr = real(sym_in)*sqrt(2);
+0058         xi = imag(sym_in)*sqrt(2);
+0059         llr_out(1, :) = 2*xr;
+0060         llr_out(2, :) = 2*xi;
+0061         
+0062     <span class="keyword">case</span> 4 <span class="comment">% 16-QAM</span>
+0063         xr = real(sym_in)*sqrt(10);
+0064         xi = imag(sym_in)*sqrt(10);
+0065         llr_out(1:2, :) = <a href="qam16_demap.html" class="code" title="function llr_out = qam16_demap(sym_in)">qam16_demap</a>(xr)/10;
+0066         llr_out(3:4, :) = <a href="qam16_demap.html" class="code" title="function llr_out = qam16_demap(sym_in)">qam16_demap</a>(xi)/10;
+0067         
+0068     <span class="keyword">case</span> 6 <span class="comment">% 64-QAM</span>
+0069         xr = real(sym_in)*sqrt(42);
+0070         xi = imag(sym_in)*sqrt(42);
+0071         llr_out(1:3, :) = <a href="qam64_demap.html" class="code" title="function llr_out = qam64_demap(sym_in)">qam64_demap</a>(xr)/42;
+0072         llr_out(4:6, :) = <a href="qam64_demap.html" class="code" title="function llr_out = qam64_demap(sym_in)">qam64_demap</a>(xi)/42;
+0073         
+0074     <span class="keyword">case</span> 8 <span class="comment">% 256-QAM</span>
+0075         xr = real(sym_in)*sqrt(170);
+0076         xi = imag(sym_in)*sqrt(170);
+0077         llr_out(1:4, :) = <a href="qam256_demap.html" class="code" title="function llr_out = qam256_demap(sym_in)">qam256_demap</a>(xr)/170;
+0078         llr_out(5:8, :) = <a href="qam256_demap.html" class="code" title="function llr_out = qam256_demap(sym_in)">qam256_demap</a>(xi)/170;
+0079 <span class="keyword">end</span>
+0080 
+0081 <span class="keyword">if</span> (DCM == false)
+0082     <span class="comment">% Negative LLR values</span>
+0083     llr_out = -llr_out.*real(snr_vec(:, ones(q, 1))).';
+0084 <span class="keyword">end</span>
+0085 
+0086 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

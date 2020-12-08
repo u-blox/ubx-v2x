@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of stf_tx</title>
+  <meta name="keywords" content="stf_tx">
+  <meta name="description" content="STF_TX Generates STF preamble">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; stf_tx.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>stf_tx
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>STF_TX Generates STF preamble</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function stf_wf = stf_tx(w_beta, n_chan) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">STF_TX Generates STF preamble
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="dot11_ifft.html" class="code" title="function out = dot11_ifft(in, n_fft)">dot11_ifft</a>	DOT11_IFFT 802.11 IFFT</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="pdet.html" class="code" title="function [idx, c_cfo, err] = pdet(in, s0_len, pdet_thold, n_chan)">pdet</a>	PDET Detects start of packet</li><li><a href="sim_tx.html" class="code" title="function [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(TX)">sim_tx</a>	SIM_TX High-level transmitter function</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function stf_wf = stf_tx(w_beta, n_chan)</a>
+0002 <span class="comment">%STF_TX Generates STF preamble</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">% Store this as a persistent variable to avoid recalculation</span>
+0027 <span class="keyword">persistent</span> stf_wf_10 stf_wf_20
+0028 
+0029 <span class="keyword">if</span> isempty(stf_wf_10)
+0030     <span class="comment">% STF f-domain represenation (including DC-subcarrier &amp; guard bands)</span>
+0031     stf_f = sqrt(1/2)*<span class="keyword">...</span>
+0032         [zeros(1,6), 0 0 1+1j 0 0 0 -1-1j 0 0 0 1+1j 0 0 0 -1-1j 0 0 0 -1-1j 0 0 0 1+1j 0 0 0 <span class="keyword">...</span>
+0033         0 0 0 0 -1-1j 0 0 0 -1-1j 0 0 0 1+1j 0 0 0 1+1j 0 0 0 1+1j 0 0 0 1+1j 0 0, zeros(1, 5)].';
+0034     
+0035     <span class="comment">% Apply spectral shaping window</span>
+0036     stf_f = stf_f.*kaiser(64, w_beta);
+0037     
+0038     <span class="comment">% Base STF waveform</span>
+0039     stf_wf_base = 1/sqrt(12)*<a href="dot11_ifft.html" class="code" title="function out = dot11_ifft(in, n_fft)">dot11_ifft</a>(stf_f, 64);
+0040     
+0041     <span class="comment">% Append CP</span>
+0042     stf_wf_10 = [stf_wf_base(33:64); stf_wf_base; stf_wf_base];
+0043 <span class="keyword">end</span>
+0044 
+0045 <span class="keyword">if</span> isempty(stf_wf_20)
+0046     n_chan_temp = 2;
+0047     <span class="comment">% Original 10 MHz STF in f-domain</span>
+0048     stf_f10 = sqrt(1/2)*<span class="keyword">...</span>
+0049         [zeros(1,6), 0 0 1+1j 0 0 0 -1-1j 0 0 0 1+1j 0 0 0 -1-1j 0 0 0 -1-1j 0 0 0 1+1j 0 0 0 <span class="keyword">...</span>
+0050         0 0 0 0 -1-1j 0 0 0 -1-1j 0 0 0 1+1j 0 0 0 1+1j 0 0 0 1+1j 0 0 0 1+1j 0 0, zeros(1, 5)].';
+0051     
+0052     <span class="comment">% Transmit STF in both 10 MHz subchannels, apply tone rotation to upper channel</span>
+0053     stf_f20 = [stf_f10; 1j*stf_f10];
+0054     
+0055     <span class="comment">% Apply spectral shaping window</span>
+0056     <span class="comment">% TODO: check if window should instead be applied individually to each subchannel</span>
+0057     stf_f = stf_f20(1:64*n_chan_temp).*kaiser(64*n_chan_temp, w_beta);
+0058     
+0059     <span class="comment">% Base STF waveform</span>
+0060     stf_wf_base20 = 1/sqrt(12*n_chan_temp)*<a href="dot11_ifft.html" class="code" title="function out = dot11_ifft(in, n_fft)">dot11_ifft</a>(stf_f, 64*n_chan_temp);
+0061     
+0062     <span class="comment">% Append CP</span>
+0063     stf_wf_20 = [stf_wf_base20(32*n_chan_temp+1:64*n_chan_temp); stf_wf_base20; stf_wf_base20];
+0064 <span class="keyword">end</span>
+0065 
+0066 <span class="comment">% Choose appropriate value for 10 MHz / 20 MHz</span>
+0067 <span class="keyword">if</span> (n_chan == 1)
+0068     stf_wf = stf_wf_10;
+0069 <span class="keyword">elseif</span> (n_chan == 2)
+0070     stf_wf = stf_wf_20;
+0071 <span class="keyword">else</span>
+0072     error(<span class="string">'not supported'</span>)
+0073 <span class="keyword">end</span>
+0074 
+0075 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

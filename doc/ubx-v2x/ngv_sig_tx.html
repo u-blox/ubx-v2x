@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of ngv_sig_tx</title>
+  <meta name="keywords" content="ngv_sig_tx">
+  <meta name="description" content="NGV_SIG_TX NGV_SIG message transmitter/parser">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; ngv_sig_tx.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>ngv_sig_tx
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>NGV_SIG_TX NGV_SIG message transmitter/parser</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function ngv_sig_wf = ngv_sig_tx(PHY, w_beta, n_chan) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">NGV_SIG_TX NGV_SIG message transmitter/parser
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="crc8.html" class="code" title="function out = crc8(in_bits)">crc8</a>	CRC8 Computes CRC8 on an input bitstream</li><li><a href="dot11_ifft.html" class="code" title="function out = dot11_ifft(in, n_fft)">dot11_ifft</a>	DOT11_IFFT 802.11 IFFT</li><li><a href="interleaver.html" class="code" title="function out = interleaver(in, n_bpscs, n_cbps, ppdu_fmt, n_chan)">interleaver</a>	INTERLEAVER Bit interleaver</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="sim_tx.html" class="code" title="function [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(TX)">sim_tx</a>	SIM_TX High-level transmitter function</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function ngv_sig_wf = ngv_sig_tx(PHY, w_beta, n_chan)</a>
+0002 <span class="comment">%NGV_SIG_TX NGV_SIG message transmitter/parser</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">% Store this as a persistent variable to avoid reinitialization</span>
+0027 <span class="keyword">persistent</span> bcc_obj
+0028 
+0029 <span class="comment">% Initialize BCC encoder object for NGV_SIG</span>
+0030 <span class="keyword">if</span> isempty(bcc_obj)
+0031     bcc_obj = comm.ConvolutionalEncoder( <span class="keyword">...</span>
+0032         <span class="string">'TrellisStructure'</span>, poly2trellis(7, [133 171]), <span class="keyword">...</span>
+0033         <span class="string">'TerminationMethod'</span>, <span class="string">'Terminated'</span>);
+0034 <span class="keyword">else</span>
+0035     reset(bcc_obj);
+0036 <span class="keyword">end</span>
+0037 
+0038 <span class="keyword">if</span> (any(PHY.mid == [4 8 16]))
+0039     mid_setting = log2(PHY.mid) - 2; <span class="comment">% NGV-SIG values 0,1,2 correspond to midamble periodicity of 4, 8, 16. Value 3 is reserved</span>
+0040 <span class="keyword">else</span>
+0041     error(<span class="string">'PHY.mid not supported'</span>)
+0042 <span class="keyword">end</span>
+0043 
+0044 <span class="comment">% NGV-SIG fields, according to SFD IEEE 802.11-19/0497r6</span>
+0045 b_ver   = de2bi(0, 2);              <span class="comment">% PHY version, set to 0 for .11bd</span>
+0046 b_bw    = PHY.n_chan - 1;           <span class="comment">% 0: 10 MHz, 1: 20 MHz</span>
+0047 b_mcs   = de2bi(PHY.mcs, 4);        <span class="comment">% MCS value</span>
+0048 b_Nss   = PHY.n_ss - 1;             <span class="comment">% Number of spatial streams indicator</span>
+0049 b_mid   = de2bi(mid_setting, 2);    <span class="comment">% Midamble period setting</span>
+0050 <span class="keyword">if</span> (PHY.mcs == 10 &amp;&amp; PHY.ngvltf_fmt == 2)
+0051     b_ltf = 0;                      <span class="comment">% when MCS==10, ltf_fmt is always 2 and b_ltf will be ignored</span>
+0052 <span class="keyword">else</span>
+0053     b_ltf = PHY.ngvltf_fmt;            <span class="comment">% LTF format for NGV-MCS 0-9, must be 0 or 1</span>
+0054 <span class="keyword">end</span>
+0055 b_extra = PHY.LDPC.extra;           <span class="comment">% LDPC extra symbol</span>
+0056 b_res   = ones(1, 2);               <span class="comment">% reserved bits, set to 1</span>
+0057 
+0058 <span class="comment">% Form basic NGV-SIG message without CRC</span>
+0059 b_ngv_sig_basic = logical([b_ver, b_bw, b_mcs, b_Nss, b_mid, b_ltf, b_extra, b_res].');
+0060 
+0061 b_crc8 = de2bi(<a href="crc8.html" class="code" title="function out = crc8(in_bits)">crc8</a>(b_ngv_sig_basic),8,<span class="string">'left-msb'</span>)';
+0062 b_ngv_sig_with_crc = [b_ngv_sig_basic; b_crc8(1:4)];
+0063 
+0064 b_ngv_sig = logical([b_ngv_sig_with_crc; zeros(6, 1)]);
+0065 
+0066 <span class="comment">% Convolutional encoder</span>
+0067 ngv_sig_enc = step(bcc_obj, b_ngv_sig);
+0068 
+0069 <span class="comment">% Interleaver</span>
+0070 ngv_sig_int = <a href="interleaver.html" class="code" title="function out = interleaver(in, n_bpscs, n_cbps, ppdu_fmt, n_chan)">interleaver</a>(ngv_sig_enc(1:48), 1, 48, 1, 1);
+0071 
+0072 <span class="comment">% BPSK modulation</span>
+0073 ngv_sig_mod = 2*ngv_sig_int - 1;
+0074 
+0075 <span class="comment">% Initialize base f-domain representation</span>
+0076 ngv_sig_sp = zeros(64, 1);
+0077 
+0078 <span class="comment">% Map modulated symbols on data subcarriers</span>
+0079 ngv_sig_sp(PHY.sig_data_idx) = ngv_sig_mod;
+0080 
+0081 <span class="comment">% Append pilots</span>
+0082 ngv_sig_sp(PHY.sig_pilot_idx) = PHY.sig_pilot_val;
+0083 
+0084 <span class="comment">% Populate the subcarriers in the upper part of the 20 MHz channel, and perform phase rotation</span>
+0085 <span class="comment">% The upper part will be used only if transmitting a 20 MHz waveform</span>
+0086 ngv_sig_sp2 = [ngv_sig_sp; 1j*ngv_sig_sp];
+0087 
+0088 <span class="comment">% Apply spectral shaping window</span>
+0089 ngv_sig_sp_win = ngv_sig_sp2(1:64*n_chan).*kaiser(64*n_chan, w_beta);
+0090 
+0091 <span class="comment">% Time-domain SIG waveform</span>
+0092 ngv_sig_wf_base = 1/sqrt(52*n_chan)*<a href="dot11_ifft.html" class="code" title="function out = dot11_ifft(in, n_fft)">dot11_ifft</a>(ngv_sig_sp_win, 64*n_chan);
+0093 
+0094 <span class="comment">% Append CP</span>
+0095 ngv_sig_wf = [ngv_sig_wf_base(48*n_chan+1:64*n_chan); ngv_sig_wf_base];
+0096 
+0097 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

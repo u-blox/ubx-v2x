@@ -1,0 +1,147 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of ldpc_enc</title>
+  <meta name="keywords" content="ldpc_enc">
+  <meta name="description" content="LDPC_ENC Encodes a binary stream with LDPC coding">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; ldpc_enc.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>ldpc_enc
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>LDPC_ENC Encodes a binary stream with LDPC coding</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function cod_bits = ldpc_enc(LDPC, data_in) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">LDPC_ENC Encodes a binary stream with LDPC coding
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="LDPCCode.html" class="code" title="">LDPCCode</a>	Function taken from https://github.com/tavildar/LDPC and u-blox claims no</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="data_tx.html" class="code" title="function [data_wf, data_f_mtx] = data_tx(PHY, pad_len, padding_out, w_beta)">data_tx</a>	DATA_TX Transmitter processing of all DATA OFDM symbols</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function cod_bits = ldpc_enc(LDPC, data_in)</a>
+0002 <span class="comment">%LDPC_ENC Encodes a binary stream with LDPC coding</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">% Store LDPC object to avoid re-generation</span>
+0027 <span class="keyword">persistent</span> ldpc_code
+0028 
+0029 <span class="comment">% LDPC parameters</span>
+0030 Ncw = LDPC.Ncw;
+0031 K0 = LDPC.K0;
+0032 Navbits = LDPC.Navbits;
+0033 vNshrt = LDPC.vNshrt;
+0034 vNpunc = LDPC.vNpunc;
+0035 vNrepRem = LDPC.vNrepRem;
+0036 vNrepInt = LDPC.vNrepInt;
+0037 vCwLen = LDPC.vCwLen;
+0038 Lldpc = LDPC.Lldpc;
+0039 rate = LDPC.rate;
+0040 
+0041 <span class="comment">% Generate LDPC object</span>
+0042 <span class="keyword">if</span> isempty(ldpc_code)
+0043     ldpc_code = <a href="LDPCCode.html" class="code" title="">LDPCCode</a>(0, 0);
+0044 <span class="keyword">end</span>
+0045 
+0046 <span class="comment">% Configure LDPC object</span>
+0047 <span class="keyword">if</span> ((ldpc_code.N ~= Lldpc) || (ldpc_code.K ~= floor(Lldpc*(1 - rate))))
+0048     ldpc_code.load_wifi_ldpc(Lldpc, rate);
+0049 <span class="keyword">end</span>
+0050 
+0051 <span class="comment">% Initialize indices &amp; variables</span>
+0052 idx1 = 0;
+0053 idx2 = 0;
+0054 cod_bits = false(Navbits, 1);
+0055 
+0056 <span class="keyword">for</span> i_cw = 1:Ncw
+0057     
+0058     n_info = K0 - vNshrt(i_cw); <span class="comment">% number of pay-load bits in systematic part</span>
+0059     
+0060     <span class="comment">% Add shortening (zero) bits</span>
+0061     unc_bits = [data_in((1:n_info) + idx1); zeros(vNshrt(i_cw), 1)];
+0062     
+0063     <span class="comment">% Increase index counter</span>
+0064     idx1 = idx1 + n_info;
+0065     
+0066     <span class="comment">% LDPC encoding</span>
+0067     cod_bits_temp = ldpc_code.encode_bits(unc_bits);
+0068     
+0069     <span class="comment">% Remove shortening bits</span>
+0070     inf_bits = cod_bits_temp(1:K0 - vNshrt(i_cw));
+0071     
+0072     <span class="comment">% Puncture parity bits</span>
+0073     par_bits = cod_bits_temp(K0 + 1:Lldpc - vNpunc(i_cw));
+0074     
+0075     temp_cw = [inf_bits; par_bits];
+0076     
+0077     <span class="keyword">if</span> vNpunc(i_cw) &gt; 0
+0078         <span class="comment">% Assemble LDPC codeword</span>
+0079         cod_bits((1:vCwLen(i_cw)) + idx2) = temp_cw;
+0080     <span class="keyword">else</span>
+0081         <span class="comment">% Integer repetition bits (for 11n compatibility)</span>
+0082         <span class="keyword">if</span> vNrepInt(i_cw) &gt; 0
+0083             rep_bits = repmat(temp_cw, vNrepInt(i_cw), 1);
+0084         <span class="keyword">else</span>
+0085             rep_bits = zeros(0, 1);
+0086         <span class="keyword">end</span>
+0087         
+0088         <span class="comment">% Assemble LDPC codeword, appending any fractional repetition bits at the end</span>
+0089         cod_bits((1:vCwLen(i_cw)) + idx2) = [temp_cw; rep_bits; temp_cw(1:vNrepRem(i_cw))];
+0090     <span class="keyword">end</span>
+0091     
+0092     <span class="comment">% Increase output vector index</span>
+0093     idx2 = idx2 + vCwLen(i_cw);
+0094 <span class="keyword">end</span>
+0095 
+0096 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

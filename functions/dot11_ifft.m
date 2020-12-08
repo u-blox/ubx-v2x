@@ -1,9 +1,9 @@
 function out = dot11_ifft(in, n_fft)
 %DOT11_IFFT 802.11 IFFT
 %
-%   Author: Ioannis Sarris, u-blox
-%   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 30-August-2018
+%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+%   contact email: ioannis.sarris@u-blox.com
+%   August 2018; Last revision: 04-December-2020
 
 % Copyright (C) u-blox
 %

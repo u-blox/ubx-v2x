@@ -1,9 +1,9 @@
 function out = crc32(in)
 %CRC32 Appends CRC32 on an input bitstream
 %
-%   Author: Ioannis Sarris, u-blox
-%   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 30-August-2018
+%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+%   contact email: ioannis.sarris@u-blox.com
+%   August 2018; Last revision: 04-December-2020
 
 % Copyright (C) u-blox
 %

@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of sig_pre_rx</title>
+  <meta name="keywords" content="sig_pre_rx">
+  <meta name="description" content="SIG_PRE_RX Get f-domain SIG messages (L-SIG, RL-SIG, NGV-SIG, RNGV-SIG) for preamble autodetection and as input to decoder">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; sig_pre_rx.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>sig_pre_rx
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>SIG_PRE_RX Get f-domain SIG messages (L-SIG, RL-SIG, NGV-SIG, RNGV-SIG) for preamble autodetection and as input to decoder</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [x_p, x_d_cfo, snr, r_phase_off, llr_in] = sig_pre_rx(r, h_est, data_idx, pilot_idx, n_chan, prev_cfo_corr, new_poff_weight) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">SIG_PRE_RX Get f-domain SIG messages (L-SIG, RL-SIG, NGV-SIG, RNGV-SIG) for preamble autodetection and as input to decoder
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="dot11_fft.html" class="code" title="function out = dot11_fft(in, n_fft)">dot11_fft</a>	DOT11_FFT 802.11 FFT</li><li><a href="fd_smooth.html" class="code" title="function h_out = fd_smooth(h_in, n_sd)">fd_smooth</a>	FD_SMOOTH Frequency-domain smoothing</li><li><a href="llr_demap.html" class="code" title="function llr_out = llr_demap(sym_in, q, snr_vec)">llr_demap</a>	LLR_DEMAP LLR demapping</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="sim_rx.html" class="code" title="function [err] = sim_rx(rx_wf, data_f_mtx, RX, TX, s0_len)">sim_rx</a>	SIM_RX High-level receiver function</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [x_p, x_d_cfo, snr, r_phase_off, llr_in] = sig_pre_rx(r, h_est, data_idx, pilot_idx, n_chan, prev_cfo_corr, new_poff_weight)</a>
+0002 <span class="comment">%SIG_PRE_RX Get f-domain SIG messages (L-SIG, RL-SIG, NGV-SIG, RNGV-SIG) for preamble autodetection and as input to decoder</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">% Perform FFT &amp; normalization</span>
+0027 n_fft = 64*n_chan;
+0028 cp_len = 16*n_chan;
+0029 ofdm_off = cp_len/2;
+0030 
+0031 y = complex(zeros(n_fft, 1));
+0032 <span class="comment">% SIG field is only decoded for this RX chain.</span>
+0033 <span class="comment">% TODO: implement MRC for multiple RX antennas</span>
+0034 i_rx = 1;
+0035 y(:, i_rx) = <a href="dot11_fft.html" class="code" title="function out = dot11_fft(in, n_fft)">dot11_fft</a>(r([cp_len+1:cp_len+n_fft-ofdm_off cp_len-ofdm_off+1:cp_len], i_rx), n_fft)*sqrt(52*n_chan)/n_fft;
+0036 
+0037 <span class="comment">% Frequency-domain smoothing</span>
+0038 h_est(:,i_rx) = <a href="fd_smooth.html" class="code" title="function h_out = fd_smooth(h_in, n_sd)">fd_smooth</a>(h_est(:,i_rx), 48);
+0039 
+0040 <span class="comment">% Pilot equalization with CFO correction</span>
+0041 x_p = y(pilot_idx, i_rx)./h_est(pilot_idx, i_rx).*[1 1 1 -1].'*exp(-1j*prev_cfo_corr);
+0042 
+0043 <span class="comment">% Residual CFO estimation</span>
+0044 r_phase_off = mean(angle(x_p));
+0045 
+0046 <span class="comment">% Overall phase correction</span>
+0047 phase_corr = prev_cfo_corr + r_phase_off * new_poff_weight;
+0048 
+0049 <span class="comment">% Data equalization</span>
+0050 x_d = y(data_idx, i_rx)./h_est(data_idx, i_rx);
+0051 
+0052 <span class="comment">% Data CFO correction</span>
+0053 x_d_cfo = x_d*exp(-1j* phase_corr );
+0054 
+0055 <span class="comment">% SNR input to Viterbi</span>
+0056 snr = abs(h_est(data_idx, i_rx));
+0057 
+0058 <span class="comment">% LLR demapping</span>
+0059 llr_in = <a href="llr_demap.html" class="code" title="function llr_out = llr_demap(sym_in, q, snr_vec)">llr_demap</a>(x_d_cfo.', 1, snr);
+0060 
+0061 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

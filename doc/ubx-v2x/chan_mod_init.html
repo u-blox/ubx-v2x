@@ -1,0 +1,167 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of chan_mod_init</title>
+  <meta name="keywords" content="chan_mod_init">
+  <meta name="description" content="CHAN_MOD_INIT Channel model initialization according to Car-2-Car models">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; chan_mod_init.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>chan_mod_init
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>CHAN_MOD_INIT Channel model initialization according to Car-2-Car models</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [chan_obj, chan_name] = chan_mod_init(channel_model, bw_mhz, ovs, n_tx_ant, n_rx_ant) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">CHAN_MOD_INIT Channel model initialization according to Car-2-Car models
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="batch_sim.html" class="code" title="">batch_sim</a>	BATCH_SIM - Batch simulation script</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [chan_obj, chan_name] = chan_mod_init(channel_model, bw_mhz, ovs, n_tx_ant, n_rx_ant)</a>
+0002 <span class="comment">%CHAN_MOD_INIT Channel model initialization according to Car-2-Car models</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">% If AWGN model is selected, return empty handle</span>
+0027 <span class="keyword">if</span> (channel_model == 0)
+0028     chan_name = <span class="string">'AWGN'</span>;
+0029     chan_obj = [];
+0030     <span class="keyword">return</span>
+0031 <span class="keyword">end</span>
+0032 
+0033 <span class="comment">% C2C models' names</span>
+0034 channel_names = {<span class="string">'R-LOS'</span> <span class="string">'UA-LOS'</span> <span class="string">'C-NLOS'</span> <span class="string">'H-LOS'</span> <span class="string">'H-NLOS'</span>, <span class="keyword">...</span>
+0035     <span class="string">'R-LOS-ENH'</span> <span class="string">'UA-LOS-ENH'</span> <span class="string">'C-NLOS-ENH'</span> <span class="string">'H-LOS-ENH'</span> <span class="string">'H-NLOS-ENH'</span>};
+0036 chan_name = channel_names{channel_model};
+0037 
+0038 <span class="comment">% Get channel model PDP, p_dB in dB, tau in sec, dpl_shft in Hz.</span>
+0039 <span class="keyword">switch</span> chan_name
+0040     <span class="keyword">case</span> <span class="string">'R-LOS'</span>
+0041         p_dB = [0 -14 -17];
+0042         tau = [0 83 183]*1e-9;
+0043         dpl_shft = [0 492 -295];
+0044     <span class="keyword">case</span> <span class="string">'UA-LOS'</span>
+0045         p_dB = [0 -8 -10 -15];
+0046         tau = [0 117 183 333]*1e-9;
+0047         dpl_shft = [0 236 -157 492];
+0048     <span class="keyword">case</span> <span class="string">'C-NLOS'</span>
+0049         p_dB = [0 -3 -5 -10];
+0050         tau = [0 267 400 533]*1e-9;
+0051         dpl_shft = [0 295 -98 591];
+0052     <span class="keyword">case</span> <span class="string">'H-LOS'</span>
+0053         p_dB = [0 -10 -15 -20];
+0054         tau = [0 100 167 500]*1e-9;
+0055         dpl_shft = [0 689 -492 886];
+0056     <span class="keyword">case</span> <span class="string">'H-NLOS'</span>
+0057         p_dB = [0 -2 -5 -7];
+0058         tau = [0 200 433 700]*1e-9;
+0059         dpl_shft = [0 689 -492 886];
+0060     <span class="keyword">case</span> <span class="string">'R-LOS-ENH'</span>
+0061         p_dB = [0 -12 -15];
+0062         tau = [0 84 183]*1e-9;
+0063         dpl_shft = [0 94 -1176];
+0064     <span class="keyword">case</span> <span class="string">'UA-LOS-ENH'</span>
+0065         p_dB = [0 -11 -13 -15];
+0066         tau = [0 222 334 533]*1e-9;
+0067         dpl_shft = [0 224 1173 588];
+0068     <span class="keyword">case</span> <span class="string">'C-NLOS-ENH'</span>
+0069         p_dB = [0 -3 -4 -7 -15];
+0070         tau = [0 220 266 475 630]*1e-9;
+0071         dpl_shft = [0 -142 -542 -155 320];
+0072     <span class="keyword">case</span> <span class="string">'H-LOS-ENH'</span>
+0073         p_dB = [0 -11 -13 -17];
+0074         tau = [0 167 433 600]*1e-9;
+0075         dpl_shft = [0 1941 -1176 -391];
+0076     <span class="keyword">case</span> <span class="string">'H-NLOS-ENH'</span>
+0077         p_dB = [0 -2 -5 -7 -15];
+0078         tau = [0 100 500 867 1152]*1e-9;
+0079         dpl_shft = [0 50 1157 -2352 1573];
+0080 <span class="keyword">end</span>
+0081 
+0082 <span class="comment">% Use a very large K-factor for 1st tap (Static - pure Rician), zero for remaining taps (pure Rayleigh)</span>
+0083 RicianFactor = [1e12 zeros(1, length(tau) - 1)];
+0084 
+0085 <span class="comment">% Maximum Doppler shift for all paths (identical)</span>
+0086 fd = max(abs(dpl_shft));
+0087 
+0088 <span class="comment">% Initialize Doppler spectrum cell</span>
+0089 doppler_spec = cell(size(dpl_shft));
+0090 
+0091 <span class="comment">% First tap is static (zero offset)</span>
+0092 doppler_spec{1} = doppler(<span class="string">'Asymmetric Jakes'</span>, [-.02 .02]);
+0093 
+0094 <span class="comment">% Remaining taps follow an Asymmetiric Jakes distribution (or &quot;Half-Bathtub&quot;)</span>
+0095 <span class="keyword">for</span> ii = 2:length(dpl_shft)
+0096     doppler_spec{ii} = doppler(<span class="string">'Asymmetric Jakes'</span>, sort([0 dpl_shft(ii)/fd]));
+0097 <span class="keyword">end</span>
+0098 
+0099 <span class="comment">% Create channel object</span>
+0100 chan_obj = comm.MIMOChannel (<span class="keyword">...</span>
+0101     <span class="string">'KFactor'</span>,                  RicianFactor, <span class="keyword">...</span>
+0102     <span class="string">'DirectPathDopplerShift'</span>,     zeros(size(RicianFactor)), <span class="keyword">...</span>
+0103     <span class="string">'DirectPathInitialPhase'</span>,     zeros(size(RicianFactor)), <span class="keyword">...</span>
+0104     <span class="string">'DopplerSpectrum'</span>,          doppler_spec, <span class="keyword">...</span>
+0105     <span class="string">'SampleRate'</span>,               ovs*bw_mhz*1e6, <span class="keyword">...</span>
+0106     <span class="string">'PathDelays'</span>,               tau, <span class="keyword">...</span>
+0107     <span class="string">'AveragePathGains'</span>,         p_dB, <span class="keyword">...</span>
+0108     <span class="string">'MaximumDopplerShift'</span>,      fd, <span class="keyword">...</span>
+0109     <span class="string">'FadingDistribution'</span>,         <span class="string">'Rician'</span>, <span class="keyword">...</span>
+0110     <span class="string">'NormalizePathGains'</span>,         true, <span class="keyword">...</span>
+0111     <span class="string">'NormalizeChannelOutputs'</span>,    false, <span class="keyword">...</span>
+0112     <span class="string">'TransmitCorrelationMatrix'</span>,  eye(n_tx_ant), <span class="keyword">...</span>
+0113     <span class="string">'ReceiveCorrelationMatrix'</span>,   eye(n_rx_ant) <span class="keyword">...</span>
+0114     );
+0115 
+0116 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

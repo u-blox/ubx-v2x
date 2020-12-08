@@ -1,9 +1,9 @@
 function check_sp_mask(in, filt_len, n_sym, ovs, enabled)
 %CHECK_SP_MASK Check spectral mask of transmitted waveform for compliance to Class C specifications
 %
-%   Author: Ioannis Sarris, u-blox
-%   email: ioannis.sarris@u-blox.com
-%   February 2019; Last revision: 19-February-2019
+%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+%   contact email: ioannis.sarris@u-blox.com
+%   August 2018; Last revision: 04-December-2020
 
 % Copyright (C) u-blox
 %

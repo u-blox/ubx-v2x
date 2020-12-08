@@ -1,0 +1,174 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of ldpc_dec</title>
+  <meta name="keywords" content="ldpc_dec">
+  <meta name="description" content="LDPC_DEC Decodes an LLR stream with LDPC decoding">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; ldpc_dec.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>ldpc_dec
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>LDPC_DEC Decodes an LLR stream with LDPC decoding</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function unc_bits = ldpc_dec(LDPC, llr_in, ldpc_cfg) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">LDPC_DEC Decodes an LLR stream with LDPC decoding
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="crc8.html" class="code" title="function out = crc8(in_bits)">crc8</a>	CRC8 Computes CRC8 on an input bitstream</li><li><a href="descrambler_rx.html" class="code" title="function out = descrambler_rx(d_in)">descrambler_rx</a>	DESCRAMBLER Bit descrambler</li><li><a href="ldpc_dec_ext.html" class="code" title="function unc_bits_temp = ldpc_dec_ext(Lldpc, rate, cod_bits, iter_count, use_minsum)">ldpc_dec_ext</a>	LDPC_DEC_EXT Decodes a single LDPC codeword using external decoder</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="data_rx.html" class="code" title="function [descr_msg] = data_rx(PHY, RX, rx_wf, idx0, h_est, data_f_mtx, r_cfo, snr_avg)">data_rx</a>	DATA_RX Receiver processing of all DATA OFDM symbols</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function unc_bits = ldpc_dec(LDPC, llr_in, ldpc_cfg)</a>
+0002 <span class="comment">%LDPC_DEC Decodes an LLR stream with LDPC decoding</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">% LDPC parameters</span>
+0027 Ncw = LDPC.Ncw;
+0028 K0 = LDPC.K0;
+0029 vNshrt = LDPC.vNshrt;
+0030 vNrepRem = LDPC.vNrepRem;
+0031 vNrepInt = LDPC.vNrepInt;
+0032 vCwLen = LDPC.vCwLen;
+0033 Nshrt = LDPC.Nshrt;
+0034 Lldpc = LDPC.Lldpc;
+0035 rate = LDPC.rate;
+0036 
+0037 <span class="comment">% Matlab decoder is already compiled, ignore this function in codegen</span>
+0038 coder.extrinsic(<span class="string">'ldpc_dec_matlab'</span>);
+0039 
+0040 <span class="comment">% Initialize indices &amp; variables</span>
+0041 idx1 = 1;
+0042 idx2 = 1;
+0043 unc_bits = zeros(Ncw*K0 - Nshrt, 1);
+0044 
+0045 <span class="comment">% Loop for LDPC codewords</span>
+0046 <span class="keyword">for</span> i_cw = 1:Ncw
+0047     
+0048     <span class="comment">% Define information bits and shortening bits lengths per codeword</span>
+0049     inf_bits_len = K0 - vNshrt(i_cw);
+0050     short_len = vNshrt(i_cw);
+0051     
+0052     <span class="comment">% Parity length</span>
+0053     ldpc_K = floor(Lldpc*rate);
+0054     ldpc_M = Lldpc - ldpc_K;
+0055     par_len = ldpc_M - LDPC.vNpunc(i_cw);
+0056     
+0057     <span class="comment">% Check if CW length is incorrectly received to avoid errors</span>
+0058     <span class="keyword">if</span> length(llr_in) &gt;= (idx1 + vCwLen(i_cw) - 1)
+0059         
+0060         <span class="comment">% Extract soft bits for current codeword</span>
+0061         X_cw = llr_in(idx1:idx1 + vCwLen(i_cw) - 1);
+0062         
+0063         <span class="comment">% Increase index of coded soft bits</span>
+0064         idx1 = idx1 + vCwLen(i_cw);
+0065         
+0066         <span class="comment">% Define length of repetition bits</span>
+0067         rep_len = vNrepRem(i_cw);
+0068         int_rep = vNrepInt(i_cw);
+0069         
+0070         <span class="comment">% Check if repetition is applicable</span>
+0071         <span class="keyword">if</span> (rep_len &gt; 0) || (int_rep &gt; 0)
+0072             
+0073             <span class="comment">% Calculate padding length to fit data on multiples of (inf_bits_len + par_len)</span>
+0074             pad_length = (int_rep + 2)*(inf_bits_len + par_len) - vCwLen(i_cw);
+0075             
+0076             <span class="comment">% Append zeros</span>
+0077             X_cw_pad = [X_cw; zeros(pad_length, 1)];
+0078             
+0079             <span class="comment">% Reshape into a matrix</span>
+0080             X_mat = reshape(X_cw_pad, (inf_bits_len + par_len), (int_rep + 2));
+0081             
+0082             <span class="comment">% Add columns to increase SNR of soft-bits</span>
+0083             X_cw = sum(X_mat, 2)/(int_rep + 2);
+0084         <span class="keyword">end</span>
+0085         
+0086         <span class="comment">% Initialize coded bits vector</span>
+0087         cod_bits = zeros(Lldpc, 1);
+0088         
+0089         <span class="comment">% Place information bits at the beginning</span>
+0090         cod_bits(1:inf_bits_len) = X_cw(1:inf_bits_len);
+0091         
+0092         <span class="comment">% Set shortening (zero) bits to highest soft value</span>
+0093         cod_bits(inf_bits_len + 1:inf_bits_len + short_len) = max(X_cw);
+0094         
+0095         <span class="comment">% Place parity bits at the end</span>
+0096         cod_bits(inf_bits_len + short_len + 1:inf_bits_len + short_len + par_len) = X_cw(inf_bits_len + 1:inf_bits_len + par_len);
+0097         
+0098         <span class="comment">% LDPC decoding</span>
+0099         unc_bits_temp = <a href="ldpc_dec_ext.html" class="code" title="function unc_bits_temp = ldpc_dec_ext(Lldpc, rate, cod_bits, iter_count, use_minsum)">ldpc_dec_ext</a>(LDPC.Lldpc, LDPC.rate, cod_bits, ldpc_cfg.iter, ldpc_cfg.minsum);
+0100         
+0101         <span class="comment">% Concatenate uncoded bits to a vector</span>
+0102         unc_bits(idx2:idx2 + inf_bits_len - 1) = unc_bits_temp(1:inf_bits_len);
+0103         
+0104         <span class="comment">% Increase index of uncoded hard bits</span>
+0105         idx2 = idx2 + inf_bits_len;
+0106         
+0107         <span class="comment">% Early termination if the A-MPDU header in the first codeword is wrong (to speed up simulation for large payloads)</span>
+0108         <span class="keyword">if</span> (i_cw == 1)
+0109             rx_out = <a href="descrambler_rx.html" class="code" title="function out = descrambler_rx(d_in)">descrambler_rx</a>(logical(unc_bits_temp));
+0110             ampdu_eof = rx_out(10);
+0111             ampdu_res = rx_out(11);
+0112             ampdu_crc_val = <a href="crc8.html" class="code" title="function out = crc8(in_bits)">crc8</a>(rx_out(10:33));
+0113             ampdu_crc_ok = (ampdu_crc_val == 12);
+0114             ampdu_sig = bi2de(rx_out(34:41)', <span class="string">'left-msb'</span>);
+0115             <span class="keyword">if</span> ~(ampdu_eof == 1 &amp;&amp; ampdu_res == 1 &amp;&amp; ampdu_sig == 78 &amp;&amp; ampdu_crc_ok)
+0116                 <span class="comment">% stop decoding further codewords</span>
+0117                 <span class="keyword">break</span>
+0118             <span class="keyword">end</span>
+0119         <span class="keyword">end</span>
+0120     <span class="keyword">end</span>
+0121 <span class="keyword">end</span>
+0122 
+0123 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of chan_est</title>
+  <meta name="keywords" content="chan_est">
+  <meta name="description" content="CHAN_EST Channel estimation algorithm, using LTF preamble">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; chan_est.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>chan_est
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>CHAN_EST Channel estimation algorithm, using LTF preamble</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function h_est = chan_est(r, n_chan) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">CHAN_EST Channel estimation algorithm, using LTF preamble
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="dot11_fft.html" class="code" title="function out = dot11_fft(in, n_fft)">dot11_fft</a>	DOT11_FFT 802.11 FFT</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="sim_rx.html" class="code" title="function [err] = sim_rx(rx_wf, data_f_mtx, RX, TX, s0_len)">sim_rx</a>	SIM_RX High-level receiver function</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function h_est = chan_est(r, n_chan)</a>
+0002 <span class="comment">%CHAN_EST Channel estimation algorithm, using LTF preamble</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">% LTF f-domain represenation (including DC-subcarrier &amp; guard bands)</span>
+0027 ltf_f10 = [zeros(1,6), 1 1 -1 -1 1 1 -1 1 -1 1 1 1 1 1 1 -1 -1 1 1 -1 1 -1 1 1 1 1 0 <span class="keyword">...</span>
+0028     1 -1 -1 1 1 -1 1 -1 1 -1 -1 -1 -1 -1 1 1 -1 -1 1 -1 1 -1 1 1 1 1, zeros(1, 5)].';
+0029 
+0030 <span class="comment">% Select LTF configuration for 10 or 20 MHz mode</span>
+0031 <span class="keyword">if</span> (n_chan == 1)
+0032     ltf_f = ltf_f10;
+0033     n_fft = 64;
+0034 <span class="keyword">else</span>
+0035     ltf_f = [ltf_f10; 1j * ltf_f10];
+0036     n_fft = 128;
+0037 <span class="keyword">end</span>
+0038 
+0039 <span class="comment">% Channel estimate for all Rx antennas</span>
+0040 h_est = complex(zeros(64*n_chan, size(r, 2)));
+0041 <span class="keyword">for</span> i_rx = 1:size(r, 2)
+0042     <span class="comment">% Average the two t-domain symbols</span>
+0043     r_avg = (r(1:64*n_chan, i_rx) + r(64*n_chan + 1:128*n_chan, i_rx))/2;
+0044     
+0045     <span class="comment">% Specify how many samples were discarded in the end and replaced by samples from cyclic prefix</span>
+0046     ofdm_off = 8*n_chan;
+0047     
+0048     <span class="comment">% FFT on the averaged sequence</span>
+0049     y = <a href="dot11_fft.html" class="code" title="function out = dot11_fft(in, n_fft)">dot11_fft</a>(r_avg([ofdm_off + 1:n_fft, 1:ofdm_off], 1), n_fft)*sqrt(52*n_chan)/n_fft;
+0050 
+0051     <span class="comment">% Least-Squares channel estimation</span>
+0052     h_est(:, i_rx) = y./ltf_f;
+0053 <span class="keyword">end</span>
+0054 
+0055 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

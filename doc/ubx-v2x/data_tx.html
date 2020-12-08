@@ -1,0 +1,202 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of data_tx</title>
+  <meta name="keywords" content="data_tx">
+  <meta name="description" content="DATA_TX Transmitter processing of all DATA OFDM symbols">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; data_tx.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>data_tx
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>DATA_TX Transmitter processing of all DATA OFDM symbols</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [data_wf, data_f_mtx] = data_tx(PHY, pad_len, padding_out, w_beta) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">DATA_TX Transmitter processing of all DATA OFDM symbols
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="dot11_ifft.html" class="code" title="function out = dot11_ifft(in, n_fft)">dot11_ifft</a>	DOT11_IFFT 802.11 IFFT</li><li><a href="interleaver.html" class="code" title="function out = interleaver(in, n_bpscs, n_cbps, ppdu_fmt, n_chan)">interleaver</a>	INTERLEAVER Bit interleaver</li><li><a href="ldpc_enc.html" class="code" title="function cod_bits = ldpc_enc(LDPC, data_in)">ldpc_enc</a>	LDPC_ENC Encodes a binary stream with LDPC coding</li><li><a href="mapper_tx.html" class="code" title="function out = mapper_tx(in, q)">mapper_tx</a>	MAPPER_TX Modulation mapper</li><li><a href="ngv_ltf_tx.html" class="code" title="function ngv_ltf_wf = ngv_ltf_tx(w_beta, n_chan, n_ss, ltf_fmt)">ngv_ltf_tx</a>	NGV_LTF_TX Generates NGV-LTF preamble</li><li><a href="scrambler_tx.html" class="code" title="function [pn_state, out] = scrambler_tx(d_in, pn_state)">scrambler_tx</a>	SCRAMBLER Bit scrambler</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="sim_tx.html" class="code" title="function [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(TX)">sim_tx</a>	SIM_TX High-level transmitter function</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [data_wf, data_f_mtx] = data_tx(PHY, pad_len, padding_out, w_beta)</a>
+0002 <span class="comment">%DATA_TX Transmitter processing of all DATA OFDM symbols</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">% Store this as a persistent variable to avoid reinitialization</span>
+0027 <span class="keyword">persistent</span> bcc_obj
+0028 
+0029 <span class="comment">% Needed for code generation</span>
+0030 coder.varsize(<span class="string">'scrambler_out'</span>, [4097*8 1], [1 0]);
+0031 
+0032 <span class="comment">% Initialize parameters</span>
+0033 n_fft = PHY.n_chan*64;
+0034 cp_len = PHY.n_chan*16;
+0035 n_sps = n_fft + cp_len;
+0036 
+0037 <span class="comment">% Create or reset system object</span>
+0038 <span class="keyword">if</span> isempty(bcc_obj)
+0039     bcc_obj = comm.ConvolutionalEncoder( <span class="keyword">...</span>
+0040         <span class="string">'TrellisStructure'</span>, poly2trellis(7, [133 171]), <span class="keyword">...</span>
+0041         <span class="string">'PuncturePatternSource'</span>, <span class="string">'Property'</span>, <span class="keyword">...</span>
+0042         <span class="string">'PuncturePattern'</span>, [1; 1]);
+0043 <span class="keyword">else</span>
+0044     reset(bcc_obj);
+0045 <span class="keyword">end</span>
+0046 
+0047 <span class="comment">% Initialize state of PN generator</span>
+0048 pn_state = flipud(PHY.pn_seq);
+0049 
+0050 <span class="comment">% Mark the tail bits so that they can be nulled after scrambling</span>
+0051 padding_vec = [true(16 + PHY.psdu_length*8, 1); false(6, 1); true(pad_len, 1)];
+0052 
+0053 <span class="comment">% Find number of midamble symbols</span>
+0054 n_nltf_samples_tot = PHY.n_ss * PHY.n_ngvltf_samp;
+0055 
+0056 <span class="comment">% Initialize time-domain waveform output</span>
+0057 data_wf = complex(zeros(PHY.n_sym*n_sps + PHY.n_mid*n_nltf_samples_tot, 1));
+0058 
+0059 <span class="comment">% Initialize frequency-domain output</span>
+0060 data_f_mtx = complex(zeros(n_fft, PHY.n_sym));
+0061 
+0062 <span class="comment">% Perform LDPC encoding</span>
+0063 ldpc_out = false;
+0064 <span class="keyword">if</span> (PHY.ppdu_fmt == 2)
+0065     [~, scrambler_out] = <a href="scrambler_tx.html" class="code" title="function [pn_state, out] = scrambler_tx(d_in, pn_state)">scrambler_tx</a>(padding_out, PHY.pn_seq);
+0066     ldpc_out = <a href="ldpc_enc.html" class="code" title="function cod_bits = ldpc_enc(LDPC, data_in)">ldpc_enc</a>(PHY.LDPC, scrambler_out);
+0067 <span class="keyword">end</span>
+0068 
+0069 <span class="comment">% Loop for each OFDM symbol</span>
+0070 i_mid = 0;
+0071 <span class="keyword">for</span> i_sym = 0:PHY.n_sym - 1
+0072     
+0073     <span class="comment">% Process through FEC</span>
+0074     <span class="keyword">if</span> (PHY.ppdu_fmt == 2)
+0075         fec_out = ldpc_out(i_sym*PHY.n_cbps + 1:(i_sym + 1)*PHY.n_cbps);
+0076     <span class="keyword">else</span>
+0077         <span class="comment">% Index of bits into scrambler per OFDM symbol</span>
+0078         idx0 = i_sym*PHY.n_dbps + 1;
+0079         idx1 = (i_sym + 1)*PHY.n_dbps;
+0080         
+0081         <span class="comment">% Perform scrambling with given PN sequence</span>
+0082         [pn_state, scrambler_out] = <a href="scrambler_tx.html" class="code" title="function [pn_state, out] = scrambler_tx(d_in, pn_state)">scrambler_tx</a>(padding_out(idx0:idx1), pn_state);
+0083         
+0084         <span class="comment">% Set scrambled tail bits to zero</span>
+0085         scrambler_out = (scrambler_out &amp; padding_vec(idx0:idx1));
+0086         
+0087         <span class="comment">% Process data through BCC encoder</span>
+0088         fec_out = step(bcc_obj, scrambler_out);
+0089         
+0090         <span class="comment">% Perform puncturing if needed</span>
+0091         <span class="keyword">switch</span> PHY.r_num
+0092             <span class="keyword">case</span> 2
+0093                 a1 = reshape(fec_out, 4, []);
+0094                 a2 = a1([1 2 3], :);
+0095                 fec_out = a2(:);
+0096             <span class="keyword">case</span> 3
+0097                 a1 = reshape(fec_out, 6, []);
+0098                 a2 = a1([1 2 3 6], :);
+0099                 fec_out = a2(:);
+0100             <span class="keyword">case</span> 5
+0101                 a1 = reshape(fec_out, 10, []);
+0102                 a2 = a1([1 2 3 6 7 10], :);
+0103                 fec_out = a2(:);
+0104         <span class="keyword">end</span>
+0105     <span class="keyword">end</span>
+0106     
+0107     <span class="comment">% Apply interleaving per OFDM symbol</span>
+0108     interlvr_out = <a href="interleaver.html" class="code" title="function out = interleaver(in, n_bpscs, n_cbps, ppdu_fmt, n_chan)">interleaver</a>(fec_out, PHY.n_bpscs, PHY.n_cbps, PHY.ppdu_fmt, PHY.n_chan);
+0109     
+0110     <span class="comment">% Initialize f-domain data symbol</span>
+0111     data_f = complex(zeros(n_fft, 1));
+0112     
+0113     <span class="comment">% Insert pilots with correct polarity</span>
+0114     <span class="keyword">if</span> PHY.ppdu_fmt == 1
+0115         pilot_val = PHY.pilot_val;
+0116     <span class="keyword">else</span>
+0117         pilot_val = circshift(PHY.pilot_val, - i_sym);
+0118     <span class="keyword">end</span>
+0119     data_f(PHY.pilot_idx, 1) = PHY.polarity_sign(mod(i_sym + PHY.pilot_offset, 127) + 1)*pilot_val;
+0120     
+0121     <span class="comment">% Modulate binary data</span>
+0122     mod_data = <a href="mapper_tx.html" class="code" title="function out = mapper_tx(in, q)">mapper_tx</a>(interlvr_out, PHY.n_bpscs);
+0123     
+0124     <span class="comment">% Insert modulated data into f-domain data symbol</span>
+0125     data_f(PHY.data_idx, 1) = mod_data;
+0126     
+0127     <span class="comment">% Apply spectral shaping window</span>
+0128     data_fs = data_f.*kaiser(n_fft, w_beta);
+0129     
+0130     <span class="comment">% Perform IFFT &amp; normalize</span>
+0131     temp_wf = 1/sqrt(PHY.n_sd + length(PHY.pilot_idx))*<a href="dot11_ifft.html" class="code" title="function out = dot11_ifft(in, n_fft)">dot11_ifft</a>(data_fs, n_fft);
+0132     
+0133     <span class="comment">% Append CP and insert into transmit waveform</span>
+0134     offset = i_sym*n_sps + i_mid*n_nltf_samples_tot;
+0135     data_wf((1:n_sps) + offset, :) = [temp_wf(n_fft-cp_len+1:n_fft); temp_wf];
+0136     
+0137     <span class="comment">% If this data symbol is followed by a midamble symbol, insert NGV-LTF sequence</span>
+0138     <span class="comment">% The last data symbol is never followed by a midamble!</span>
+0139     <span class="keyword">if</span> (mod((i_sym + 1), PHY.mid) == 0 &amp;&amp; i_sym &lt; PHY.n_sym - 1)
+0140         ltf_wf = <a href="ngv_ltf_tx.html" class="code" title="function ngv_ltf_wf = ngv_ltf_tx(w_beta, n_chan, n_ss, ltf_fmt)">ngv_ltf_tx</a>(w_beta, PHY.n_chan, PHY.n_ss, PHY.ngvltf_fmt);
+0141         offset = (i_sym+1)*n_sps + i_mid*n_nltf_samples_tot;
+0142         data_wf((1:n_nltf_samples_tot) + offset, :) = ltf_wf;
+0143         <span class="comment">% Keep track of midamble symbols used</span>
+0144         i_mid = i_mid + 1;
+0145     <span class="keyword">end</span>
+0146     
+0147     <span class="comment">% Store f-domain symbols which are needed for (genie) channel tracking at the Rx</span>
+0148     data_f_mtx(:, i_sym + 1) = data_f;
+0149 <span class="keyword">end</span>
+0150 
+0151 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

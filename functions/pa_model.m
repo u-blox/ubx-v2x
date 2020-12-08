@@ -1,9 +1,9 @@
 function out = pa_model(in, enabled)
 %PA_MODEL Apply power amplifier non-linearity
 %
-%   Author: Ioannis Sarris, u-blox
-%   email: ioannis.sarris@u-blox.com
-%   February 2019; Last revision: 19-February-2019
+%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+%   contact email: ioannis.sarris@u-blox.com
+%   August 2018; Last revision: 04-December-2020
 
 % Copyright (C) u-blox
 %
@@ -53,4 +53,6 @@ if enabled
     
     % Apply the model to the transmit waveform
     out = pa_obj(in)/db2mag(pa_bo);
+end
+
 end

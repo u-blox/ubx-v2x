@@ -1,0 +1,286 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of tx_phy_params</title>
+  <meta name="keywords" content="tx_phy_params">
+  <meta name="description" content="TX_PHY_PARAMS Initializes PHY layer parameters">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; tx_phy_params.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>tx_phy_params
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>TX_PHY_PARAMS Initializes PHY layer parameters</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [PHY, data_msg] = tx_phy_params(mode, mcs, tx_payload_len, ppdu_fmt, mid, n_ss, ngvltf_fmt, n_chan, rx_lsig_len, rx_ngvsig_extra_sym) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">TX_PHY_PARAMS Initializes PHY layer parameters
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="crc32.html" class="code" title="function out = crc32(in)">crc32</a>	CRC32 Appends CRC32 on an input bitstream</li><li><a href="crc8.html" class="code" title="function out = crc8(in_bits)">crc8</a>	CRC8 Computes CRC8 on an input bitstream</li><li><a href="ldpc_enc_params.html" class="code" title="function ldpcPara = ldpc_enc_params(psdu_length, Ndbps, Ncbps)">ldpc_enc_params</a>	LDPC_ENC_PARAMS Returns LDPC encoding parameters</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="batch_sim.html" class="code" title="">batch_sim</a>	BATCH_SIM - Batch simulation script</li><li><a href="ngv_sig_parse.html" class="code" title="function PHY = ngv_sig_parse(NGV_SIG_CFG, sig_length)">ngv_sig_parse</a>	NGV_SIG_PARSE Parse NGV-SIG parameters into PHY structure</li><li><a href="sig_parse.html" class="code" title="function PHY = sig_parse(SIG_CFG)">sig_parse</a>	SIG_PARSE Parse SIG parameters into PHY structure</li><li><a href="sim_tx.html" class="code" title="function [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(TX)">sim_tx</a>	SIM_TX High-level transmitter function</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [PHY, data_msg] = tx_phy_params(mode, mcs, tx_payload_len, ppdu_fmt, mid, n_ss, ngvltf_fmt, n_chan, rx_lsig_len, rx_ngvsig_extra_sym)</a>
+0002 <span class="comment">%TX_PHY_PARAMS Initializes PHY layer parameters</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">% Store MCS / payload length</span>
+0027 PHY.mcs         = mcs;
+0028 PHY.ppdu_fmt    = ppdu_fmt;
+0029 PHY.n_chan      = n_chan;
+0030 PHY.n_ss        = n_ss;
+0031 
+0032 <span class="comment">% Initialize scrambler with a 7-bit non-allzero PN sequence (random or pre-set)</span>
+0033 PHY.pn_seq = logical(de2bi(randi([1 127]), 7, <span class="string">'left-msb'</span>))';
+0034 
+0035 <span class="comment">% SIG pilot subcarrier indices and values</span>
+0036 PHY.sig_pilot_idx = [-21 -7 7 21].' + 33;
+0037 PHY.sig_pilot_val = [1 1 1 -1].';
+0038 
+0039 <span class="comment">% Polarity signs to use for pilots</span>
+0040 PHY.polarity_sign = [1,1,1,1,-1,-1,-1,1,-1,-1,-1,-1,1,1,-1,1,-1,-1,1,1,-1,1,1,-1,1,1,1,1,1,1,-1,1,1,1,-1,1,1,-1,-1,1,1,1, <span class="keyword">...</span>
+0041     -1,1,-1,-1,-1,1,-1,1,-1,-1,1,-1,-1,1,1,1,1,1,-1,-1,1,1,-1,-1,1,-1,1,-1,1,1,-1,-1,-1,1,1,-1,-1,-1,-1,1,-1,-1,1, <span class="keyword">...</span>
+0042     -1,1,1,1,1,-1,1,-1,1,-1,1,-1,-1,-1,-1,-1,1,-1,1,1,-1,1,-1,1,1,1,-1,-1,1,-1,-1,-1,1,1,1,-1,-1,-1,-1,-1,-1,-1].';
+0043 
+0044 <span class="comment">% SIG data subcarrier indices</span>
+0045 PHY.sig_data_idx = [-26:-22 -20:-8 -6:-1 1:6 8:20 22:26].' + 33;
+0046 
+0047 <span class="comment">% Legacy (1) or NGV (2) PPDU format</span>
+0048 <span class="keyword">if</span> (ppdu_fmt == 1)
+0049     <span class="comment">% MCS tables for coding rate (numerator / denominator) and bits per modulation symbol</span>
+0050     r_num_vec =   [1 3 1 3 1 3 2 3];
+0051     r_denom_vec = [2 4 2 4 2 4 3 4];
+0052     n_bpscs_vec = [1 1 2 2 4 4 6 6];
+0053     
+0054     <span class="comment">% Number of data subcarriers and tones</span>
+0055     n_sd = 48;
+0056     n_st = 52;
+0057     
+0058     <span class="comment">% Pilot subcarrier indices and values</span>
+0059     PHY.pilot_idx = [-21 -7 7 21].' + 33;
+0060     PHY.pilot_val = [1 1 1 -1].';
+0061     
+0062     <span class="comment">% Data subcarrier indices</span>
+0063     PHY.data_idx  = [-26:-22 -20:-8 -6:-1 1:6 8:20 22:26].' + 33;
+0064     PHY.pilot_offset = 1;
+0065     
+0066     PHY.ngvltf_fmt     = 0;
+0067     PHY.t_ngvltf       = 0;
+0068     PHY.n_ngvltf_samp  = 0;
+0069 <span class="keyword">elseif</span> (ppdu_fmt == 2)
+0070     <span class="comment">% MCS tables for coding rate (numerator / denominator) and bits per modulation symbol</span>
+0071     <span class="comment">% NGV-MCS. Source: Specification Framework Document 11-19-0497-06</span>
+0072     r_num_vec =   [1 1 3 1 3 2 3 5 3 5 1];
+0073     r_denom_vec = [2 2 4 2 4 3 4 6 4 6 2];
+0074     n_bpscs_vec = [1 2 2 4 4 6 6 6 8 8 0.5]; <span class="comment">% 0.5 is for BSPK with DCM</span>
+0075     
+0076     <span class="keyword">if</span> (n_chan == 1)
+0077         <span class="comment">% Number of data subcarriers and tones</span>
+0078         n_sd = 52;
+0079         n_st = 56;
+0080         
+0081         <span class="comment">% Pilot subcarrier indices and values</span>
+0082         PHY.pilot_idx = [-22 -8 8 22].' + 33; <span class="comment">% different from SIG pilot indices</span>
+0083         PHY.pilot_val = [1 1 1 -1].';
+0084         
+0085         <span class="comment">% Data subcarrier indices</span>
+0086         PHY.data_idx = [-28:-23 -21:-9 -7:-1 1:7 9:21 23:28].' + 33;
+0087     <span class="keyword">elseif</span> (n_chan == 2)
+0088         <span class="comment">% Number of data subcarriers and tones</span>
+0089         n_sd = 108;
+0090         n_st = 114;
+0091         
+0092         <span class="comment">% Pilot subcarrier indices and values</span>
+0093         PHY.pilot_idx = [-54 -26 -12 12 26 54].' + 65;
+0094         PHY.pilot_val = [1 1 1 -1 -1 1].'; <span class="comment">% first row in table 19-20</span>
+0095         
+0096         <span class="comment">% Data subcarrier indices</span>
+0097         PHY.data_idx = [-58:-55 -53:-27 -25:-13 -11:-2 2:11 13:25 27:53 55:58].' + 65;
+0098     <span class="keyword">else</span>
+0099         error(<span class="string">'bw not supported'</span>);
+0100     <span class="keyword">end</span>
+0101     
+0102     PHY.pilot_offset = 4;
+0103     
+0104     <span class="comment">% NGV-LTF parameters</span>
+0105     <span class="keyword">if</span> (mcs == 10)
+0106         <span class="comment">% MCS 10 must always use ngvltf_fmt 2 (NGV-LTF-repeat)</span>
+0107         ngvltf_fmt = 2;
+0108     <span class="keyword">end</span>
+0109     t_ngvltf_vec = [8, 4.8, 14.4];
+0110     t_ngvltf = t_ngvltf_vec(ngvltf_fmt+1);
+0111     PHY.ngvltf_fmt     = ngvltf_fmt;
+0112     PHY.t_ngvltf       = t_ngvltf;
+0113     PHY.n_ngvltf_samp  = t_ngvltf * 10* n_chan;
+0114 <span class="keyword">else</span>
+0115     <span class="comment">% Prevent errors in code generation</span>
+0116     error(<span class="string">'ppdu_fmt not supported'</span>)
+0117 <span class="keyword">end</span>
+0118 
+0119 <span class="comment">% Find code rate numerator/denominator &amp; bits per modulation symbol</span>
+0120 PHY.r_num   = r_num_vec(mcs + 1);
+0121 PHY.r_denom = r_denom_vec(mcs + 1);
+0122 PHY.n_bpscs = n_bpscs_vec(mcs + 1);
+0123 
+0124 <span class="comment">% Calculate coded/uncoded number of bits per OFDM symbol</span>
+0125 n_cbps  = n_sd*n_bpscs_vec(mcs + 1);
+0126 n_dbps  = n_sd*n_bpscs_vec(mcs + 1)*r_num_vec(mcs + 1)/r_denom_vec(mcs + 1);
+0127 
+0128 <span class="comment">% Extra step to enable code generation</span>
+0129 PHY.n_sd    = n_sd;
+0130 PHY.n_st    = n_st;
+0131 PHY.n_cbps  = n_cbps;
+0132 PHY.n_dbps  = n_dbps;
+0133 
+0134 <span class="comment">% Calculate number of OFDM symbols, different value for 802.11p/802.11bd</span>
+0135 <span class="keyword">if</span> (ppdu_fmt == 1)
+0136     <span class="keyword">if</span> strcmp(mode, <span class="string">'RX'</span>)
+0137         <span class="comment">% receiver side: LSIG length value is given</span>
+0138         psdu_length = rx_lsig_len;
+0139     <span class="keyword">else</span>
+0140         <span class="comment">% transmitter side, .11p: psdu_length is always equal to payload_len (no padding)</span>
+0141         psdu_length = tx_payload_len;
+0142     <span class="keyword">end</span>
+0143     
+0144     LDPC = <a href="ldpc_enc_params.html" class="code" title="function ldpcPara = ldpc_enc_params(psdu_length, Ndbps, Ncbps)">ldpc_enc_params</a>(401, 26, 52); <span class="comment">% necessary for codegen, with example values that don't cause errors</span>
+0145     PHY.n_sym = ceil((16 + 8*psdu_length + 6)/n_dbps);
+0146     PHY.mid   = 0; <span class="comment">% midambles are disabled</span>
+0147     PHY.n_mid = 0; <span class="comment">% no midamble symbols</span>
+0148 <span class="keyword">elseif</span> (ppdu_fmt == 2)
+0149     Nservice = 16;
+0150     <span class="keyword">if</span> strcmp(mode, <span class="string">'RX'</span>)
+0151         <span class="comment">% receiver side: compute psdu length from RX_TIME and other parameters</span>
+0152         n_ngvltf = n_ss;
+0153         time_sym = 8;
+0154         time_training = n_ngvltf * t_ngvltf;
+0155         time_mid = time_training;
+0156         <span class="comment">% NGV part of the preamble: RL-SIG + NGV-SIG + RNGV-SIG + NGV-STF + multiple NGV-LTFs</span>
+0157         time_ngv_pre = 8 + 8 + 8 + 8 + time_training;
+0158         
+0159         <span class="comment">% Obtain RX time from length field in SIG. Always integer because sig_length must be modulo 3</span>
+0160         rx_time_after_leg = (rx_lsig_len + 3)/3*8;
+0161         rx_time_data_field = rx_time_after_leg - time_ngv_pre;
+0162         
+0163         <span class="comment">% Duration of M data symbols followed by one midamble</span>
+0164         time_mid_rep = time_mid + mid*time_sym;
+0165         
+0166         <span class="comment">% Number of Midambles</span>
+0167         n_mid_rx = floor((rx_time_data_field-time_sym)/time_mid_rep); <span class="comment">% (32-44) in D0.3</span>
+0168         
+0169         <span class="comment">% Total number of received data symbols (symbols in the data field that are not midambles)</span>
+0170         n_sym_rx_prime = floor((rx_time_data_field - n_mid_rx*time_mid)/8); <span class="comment">% (32-43) in D0.3</span>
+0171         
+0172         <span class="comment">% Get the basic number of symbols (subtract 0 or 1 LDPC extra symbol)</span>
+0173         n_sym_rx_basic = n_sym_rx_prime - rx_ngvsig_extra_sym;
+0174         
+0175         <span class="comment">% Compute the total number of data bits on the PHY (includes 0-7 bits of PHY padding)</span>
+0176         phy_length_bits_padded = n_sym_rx_basic*n_dbps - Nservice;
+0177         
+0178         <span class="comment">% Compute PSDU length</span>
+0179         psdu_length = floor(phy_length_bits_padded/8);
+0180         
+0181         <span class="comment">% LDPC decoding parameters</span>
+0182         LDPC = <a href="ldpc_enc_params.html" class="code" title="function ldpcPara = ldpc_enc_params(psdu_length, Ndbps, Ncbps)">ldpc_enc_params</a>(psdu_length, n_dbps, n_cbps);
+0183         PHY.n_sym = LDPC.Nsym;
+0184         PHY.mid = mid;
+0185         PHY.n_mid = n_mid_rx;
+0186     <span class="keyword">elseif</span> strcmp(mode, <span class="string">'TX'</span>)
+0187         <span class="comment">% Get the minimum PSDU length required to fit an MPDU of length tx_payload_len (add 4 Byte A-MPDU header)</span>
+0188         min_psdu_length = tx_payload_len + 4;
+0189         
+0190         <span class="comment">% Get the basic number of data symbols required to transmit the payload</span>
+0191         n_sym_basic = ceil((min_psdu_length*8 + Nservice)/n_dbps);
+0192         
+0193         <span class="comment">% Compute PSDU length. Length of the phy payload (MAC payload_length + MAC padding bytes). Does NOT include the 0-7 PHY padding bits.</span>
+0194         psdu_length = floor((n_sym_basic*n_dbps - Nservice)/8);
+0195                
+0196         <span class="comment">% LDPC encoding parameters</span>
+0197         LDPC = <a href="ldpc_enc_params.html" class="code" title="function ldpcPara = ldpc_enc_params(psdu_length, Ndbps, Ncbps)">ldpc_enc_params</a>(psdu_length, n_dbps, n_cbps);
+0198         
+0199         <span class="comment">% Total number of transmitted data symbols, equal to n_sym_basic + (0 or 1 LDPC extra symbol)</span>
+0200         PHY.n_sym = LDPC.Nsym;
+0201         PHY.mid = mid;
+0202         PHY.n_mid = floor((LDPC.Nsym-1)/(mid)); <span class="comment">%TODO double-check this!</span>
+0203     <span class="keyword">else</span>
+0204         error(<span class="string">'mode must be RX or TX'</span>)
+0205     <span class="keyword">end</span>
+0206 <span class="keyword">else</span>
+0207     error(<span class="string">'ppdu_fmt not supported'</span>)
+0208 <span class="keyword">end</span>
+0209 
+0210 PHY.psdu_length = psdu_length;
+0211 PHY.LDPC = LDPC;
+0212 
+0213 <span class="comment">% Create pseudo-random PSDU binary message (account for CRC-32)</span>
+0214 tmp_msg = randi([0 255], tx_payload_len - 4, 1)';
+0215 
+0216 <span class="comment">% Calculate CRC-32</span>
+0217 data_msg_crc = <a href="crc32.html" class="code" title="function out = crc32(in)">crc32</a>(tmp_msg);
+0218 
+0219 <span class="comment">% Convert byte to binary data</span>
+0220 data_msg = logical(de2bi(data_msg_crc, 8))';
+0221 data_msg = data_msg(:);
+0222 
+0223 <span class="keyword">if</span> (ppdu_fmt == 2)
+0224     <span class="comment">% Prepend A-MPDU header</span>
+0225     eof   = 1;
+0226     res   = 1;
+0227     len   = de2bi(tx_payload_len, 14, <span class="string">'left-msb'</span>)'; <span class="comment">% TODO: check MSB mode</span>
+0228     crc   = de2bi(<a href="crc8.html" class="code" title="function out = crc8(in_bits)">crc8</a>([eof; res; len]), 8, <span class="string">'left-msb'</span>)'; <span class="comment">% TODO: check MSB mode</span>
+0229     <span class="comment">% ASCII 'N' signature field</span>
+0230     signature   = de2bi(64+14,8,  <span class="string">'left-msb'</span>)'; <span class="comment">% TODO: check MSB mode</span>
+0231     ampdu_header = [eof; res; len; crc; signature];
+0232     data_msg = [logical(ampdu_header); data_msg];
+0233 <span class="keyword">end</span>
+0234 
+0235 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

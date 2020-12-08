@@ -1,0 +1,261 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of ldpc_enc_params</title>
+  <meta name="keywords" content="ldpc_enc_params">
+  <meta name="description" content="LDPC_ENC_PARAMS Returns LDPC encoding parameters">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; ldpc_enc_params.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>ldpc_enc_params
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>LDPC_ENC_PARAMS Returns LDPC encoding parameters</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function ldpcPara = ldpc_enc_params(psdu_length, Ndbps, Ncbps) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">LDPC_ENC_PARAMS Returns LDPC encoding parameters
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="tx_phy_params.html" class="code" title="function [PHY, data_msg] = tx_phy_params(mode, mcs, tx_payload_len, ppdu_fmt, mid, n_ss, ngvltf_fmt, n_chan, rx_lsig_len, rx_ngvsig_extra_sym)">tx_phy_params</a>	TX_PHY_PARAMS Initializes PHY layer parameters</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [Lldpc, Ncw, FileIdx] = getEncPara( Navbits, Npld, rate)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function ldpcPara = ldpc_enc_params(psdu_length, Ndbps, Ncbps)</a>
+0002 <span class="comment">%LDPC_ENC_PARAMS Returns LDPC encoding parameters</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 rate  = Ndbps/Ncbps;
+0027 Nservice = 16;
+0028 
+0029 <span class="comment">% a) Compute the number of available bits</span>
+0030 <span class="comment">% The initial number of OFDM symbols required.</span>
+0031 n_sym_basic = ceil((psdu_length*8 + Nservice)/Ndbps);
+0032 
+0033 <span class="comment">% The number of payload bits. Stays the same, regardless of LDPC extra symbol.</span>
+0034 Npld = n_sym_basic*Ndbps;
+0035 
+0036 <span class="comment">% The initial number of coded bits. Stays the same, regardless of LDPC extra symbol.</span>
+0037 Navbits_init = Ncbps*ceil(Npld/(Ndbps));
+0038 
+0039 <span class="comment">% The total number of coded bits. This is increased if an LDPC extra symbol is required</span>
+0040 Navbits = Navbits_init;
+0041 
+0042 <span class="comment">% % Sanity checks:</span>
+0043 <span class="comment">% psduLength2 = floor((n_sym_basic*Ndbps-Nservice)/8); % PSDU_length. Length of the phy payload (a_mpdu_payload_length + MAC padding bytes, but NOT the 0-7 PHY padding bits)</span>
+0044 <span class="comment">% additional_pad = psduLength2 - psdu_length;</span>
+0045 <span class="comment">% if additional_pad ~= 0</span>
+0046 <span class="comment">%     error('Wrong PSDU Length (MAC padding is required)')</span>
+0047 <span class="comment">% end</span>
+0048 <span class="comment">% Nphypad = Npld - psduLength2*8 - Nservice;</span>
+0049 <span class="comment">% if Nphypad &gt; 7</span>
+0050 <span class="comment">%     error('Wrong PSDU Length (MAC padding is required)')</span>
+0051 <span class="comment">% end</span>
+0052 
+0053 <span class="comment">% b) Compute the integer number of LDPC codewords to be transmitted</span>
+0054 [Lldpc, Ncw, FileIdx] = <a href="#_sub1" class="code" title="subfunction [Lldpc, Ncw, FileIdx] = getEncPara( Navbits, Npld, rate)">getEncPara</a>( Navbits, Npld, rate);
+0055 K0 = Lldpc * rate;
+0056 
+0057 <span class="comment">% c) Compute number of shortening bits</span>
+0058 tem = Ncw * Lldpc * rate - Npld;
+0059 Nshrt = max(0, tem);
+0060 vNshrt = zeros(1, Ncw);
+0061 
+0062 <span class="keyword">if</span>( Nshrt &gt; 0)
+0063     Nspcw = floor( Nshrt / Ncw);
+0064     Nsp1 = rem( Nshrt, Ncw);
+0065     vNshrt(1: Nsp1) = Nspcw + 1;  <span class="comment">% indicate codewords where bit index (k-Nspcw-1 : k-1) will be set to zero</span>
+0066     vNshrt(Nsp1+1 : Ncw) = Nspcw; <span class="comment">% indicate codewords where bit index (k-Nspcw : k-1) will be set to zero</span>
+0067 <span class="keyword">end</span>
+0068 
+0069 vCwLen = Lldpc - vNshrt;
+0070 
+0071 <span class="comment">% d) Compute bit to be punctured</span>
+0072 tem = (Ncw * Lldpc) - Navbits - Nshrt;
+0073 Npunc = max( 0, tem);
+0074 
+0075 temA = 0.1 * Ncw * Lldpc * (1-rate);
+0076 temB = 1.2 * Npunc * (rate /(1-rate));
+0077 temC = 0.3 * Ncw * Lldpc *(1-rate);
+0078 
+0079 extra = 0;
+0080 <span class="keyword">if</span>( ( (Npunc &gt; temA) &amp;&amp; (Nshrt &lt; temB)) || (Npunc &gt; temC))
+0081     <span class="comment">% examples:</span>
+0082     <span class="comment">% MCS-0, payload 350: no extra symbol</span>
+0083     <span class="comment">% MSC-1, payload 400: extra symbol</span>
+0084     extra = 1;
+0085     Navbits = Navbits + Ncbps;
+0086     tem = (Ncw * Lldpc) - Navbits - Nshrt;
+0087     Npunc = max( 0, tem);
+0088 <span class="keyword">end</span>
+0089 
+0090 Nppcw = floor( Npunc/ Ncw);   vNpunc = zeros(1, Ncw);
+0091 Nsym = Navbits / Ncbps; <span class="comment">% Nsym includes the extra symbol.</span>
+0092 
+0093 <span class="keyword">if</span> (Npunc &gt; 0)
+0094     Npp1 = rem( Npunc, Ncw);  <span class="comment">% discard parity bits: (n-k-Nppcw-1 : n-k-1)</span>
+0095     vNpunc(1: Npp1) = Nppcw + 1;
+0096     vNpunc(Npp1+1 : Ncw) = Nppcw; <span class="comment">% discard parity bits: (n-k-Nppcw : n-k-1)</span>
+0097     
+0098     vCwLen = vCwLen - vNpunc;
+0099 <span class="keyword">end</span>
+0100 
+0101 <span class="comment">% e) Compute number of coded bits to be repeated, valid only when Npunc==0</span>
+0102 tem = Navbits - (Ncw * Lldpc * (1-rate)) - Npld;
+0103 Nrep = max(0, round(tem));
+0104 vNrepInt = zeros(1, Ncw);  vNrepRem = zeros(1, Ncw);
+0105 
+0106 <span class="keyword">if</span>( Npunc == 0 &amp;&amp; Nrep &gt; 0)
+0107     repBit = floor( Nrep / Ncw);  <span class="comment">% repeat bits for each codeword</span>
+0108     Np1 = rem( Nrep, Ncw);  <span class="comment">% one more bits should be repeated</span>
+0109     
+0110     vRep = ones(1, Ncw) * repBit;
+0111     vRep(1:Np1) = repBit + 1;  <span class="comment">% 1-by-Ncw, repeat bits for each codeword</span>
+0112     
+0113     vNrepInt = floor( vRep ./ vCwLen);
+0114     vNrepRem = vRep - vNrepInt .* vCwLen;
+0115     
+0116     vCwLen = vCwLen + vRep;
+0117 <span class="keyword">end</span>
+0118 
+0119 ldpcPara.Lldpc   = Lldpc;
+0120 ldpcPara.Ncw     = Ncw;
+0121 ldpcPara.Nsym    = Nsym;
+0122 ldpcPara.Ndbps   = Ndbps;
+0123 ldpcPara.Ncbps   = Ncbps;
+0124 ldpcPara.Npld    = Npld;
+0125 ldpcPara.Navbits = Navbits;
+0126 ldpcPara.K0      = K0;
+0127 ldpcPara.rate    = rate;
+0128 ldpcPara.extra   = extra;
+0129 
+0130 ldpcPara.Nshrt   = Nshrt;
+0131 ldpcPara.Npunc   = Npunc;
+0132 ldpcPara.Nrep    = Nrep;
+0133 
+0134 <span class="comment">% the following vectors are 1-by-Ncw</span>
+0135 ldpcPara.vNshrt   = vNshrt;  <span class="comment">% Nspcw for each codeword:</span>
+0136 ldpcPara.vNpunc   = vNpunc;     <span class="comment">% Nppcw for each codeword</span>
+0137 ldpcPara.vNrepInt = vNrepInt; <span class="comment">% repeat number of the whole codeword</span>
+0138 ldpcPara.vNrepRem = vNrepRem; <span class="comment">% repeat number of bits in a codeword</span>
+0139 
+0140 ldpcPara.vCwLen   = vCwLen;   <span class="comment">% codeword length after discard shorten bits, punc or repeat</span>
+0141 
+0142 ldpcPara.FileIdx  = FileIdx;
+0143 <span class="keyword">return</span>;
+0144 
+0145 
+0146 <a name="_sub1" href="#_subfunctions" class="code">function [Lldpc, Ncw, FileIdx] = getEncPara( Navbits, Npld, rate)</a>
+0147 <span class="comment">% Table20-15: PPDU encoding parameters</span>
+0148 <span class="comment">% Lldpc: LDPC codeworklength</span>
+0149 <span class="comment">% Ncw: number of LDPC codewords</span>
+0150 <span class="comment">% FileIdx: index of generating matrix</span>
+0151 <span class="comment">%    FileIdx.idxCwLen: index of codeword length: [648, 1296, 1944] =&gt; [1, 2, 3]</span>
+0152 <span class="comment">%    FileIdx.idxRate: index of rate: [1/2, 2/3, 3/4, 5/6] =&gt; [1, 2, 3, 4]</span>
+0153 <span class="comment">% Npld: number of bits int ehPSDU and SERVICE field</span>
+0154 
+0155 <span class="keyword">if</span>( Navbits &lt;= 648)
+0156     Ncw = 1;
+0157     tem = Npld + 912*(1-rate);
+0158     <span class="keyword">if</span>( Navbits &gt;= tem)
+0159         Lldpc = 1296;
+0160     <span class="keyword">else</span>
+0161         Lldpc = 648;
+0162     <span class="keyword">end</span>
+0163     
+0164 <span class="keyword">elseif</span>( Navbits &lt;= 1296)
+0165     Ncw = 1;
+0166     tem = Npld + 1464*(1-rate);
+0167     <span class="keyword">if</span>( Navbits &gt;= tem)
+0168         Lldpc = 1944;
+0169     <span class="keyword">else</span>
+0170         Lldpc = 1296;
+0171     <span class="keyword">end</span>
+0172     
+0173 <span class="keyword">elseif</span>( Navbits &lt;= 1944)
+0174     Ncw = 1;
+0175     Lldpc = 1944;
+0176     
+0177 <span class="keyword">elseif</span>( Navbits &lt;= 2592)
+0178     Ncw = 2;
+0179     tem = Npld + 2916*(1-rate);
+0180     <span class="keyword">if</span>( Navbits &gt;= tem)
+0181         Lldpc = 1944;
+0182     <span class="keyword">else</span>
+0183         Lldpc = 1296;
+0184     <span class="keyword">end</span>
+0185     
+0186 <span class="keyword">else</span>  <span class="comment">% Navbits &gt; 2592</span>
+0187     Ncw = ceil( Npld / (1944 * rate));
+0188     Lldpc = 1944;
+0189 <span class="keyword">end</span>
+0190 
+0191 <span class="keyword">switch</span>( Lldpc)
+0192     <span class="keyword">case</span> 648,   FileIdx.idxCwLen = 1;
+0193     <span class="keyword">case</span> 1296,  FileIdx.idxCwLen = 2;
+0194     <span class="keyword">case</span> 1944,  FileIdx.idxCwLen = 3;
+0195     <span class="keyword">otherwise</span>,  FileIdx.idxCwLen = 0; error(<span class="string">'unknown codeword length'</span>);
+0196 <span class="keyword">end</span>
+0197 
+0198 <span class="comment">% rate: 1/2, 2/3, 3/4, 5/6</span>
+0199 rateScale = rate * 12;
+0200 <span class="keyword">switch</span>( rateScale)
+0201     <span class="keyword">case</span> 6,     FileIdx.idxRate = 1;
+0202     <span class="keyword">case</span> 8,     FileIdx.idxRate = 2;
+0203     <span class="keyword">case</span> 9,     FileIdx.idxRate = 3;
+0204     <span class="keyword">case</span> 10,    FileIdx.idxRate = 4;
+0205     <span class="keyword">otherwise</span>,  FileIdx.idxCwLen = 0; error(<span class="string">'unknown codeword length'</span>);
+0206 <span class="keyword">end</span>
+0207 
+0208 <span class="keyword">return</span>;</pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

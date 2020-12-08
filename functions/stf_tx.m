@@ -1,9 +1,9 @@
-function stf_wf = stf_tx(w_beta)
+function stf_wf = stf_tx(w_beta, n_chan)
 %STF_TX Generates STF preamble
 %
-%   Author: Ioannis Sarris, u-blox
-%   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 19-February-2019
+%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+%   contact email: ioannis.sarris@u-blox.com
+%   August 2018; Last revision: 04-December-2020
 
 % Copyright (C) u-blox
 %
@@ -24,9 +24,9 @@ function stf_wf = stf_tx(w_beta)
 % Purpose: V2X baseband simulation model
 
 % Store this as a persistent variable to avoid recalculation
-persistent stf_wf_base
+persistent stf_wf_10 stf_wf_20
 
-if isempty(stf_wf_base)
+if isempty(stf_wf_10)
     % STF f-domain represenation (including DC-subcarrier & guard bands)
     stf_f = sqrt(1/2)*...
         [zeros(1,6), 0 0 1+1j 0 0 0 -1-1j 0 0 0 1+1j 0 0 0 -1-1j 0 0 0 -1-1j 0 0 0 1+1j 0 0 0 ...
@@ -37,9 +37,39 @@ if isempty(stf_wf_base)
     
     % Base STF waveform
     stf_wf_base = 1/sqrt(12)*dot11_ifft(stf_f, 64);
+    
+    % Append CP
+    stf_wf_10 = [stf_wf_base(33:64); stf_wf_base; stf_wf_base];
 end
 
-% Append CP
-stf_wf = [stf_wf_base(33:64); stf_wf_base; stf_wf_base];
+if isempty(stf_wf_20)
+    n_chan_temp = 2;
+    % Original 10 MHz STF in f-domain
+    stf_f10 = sqrt(1/2)*...
+        [zeros(1,6), 0 0 1+1j 0 0 0 -1-1j 0 0 0 1+1j 0 0 0 -1-1j 0 0 0 -1-1j 0 0 0 1+1j 0 0 0 ...
+        0 0 0 0 -1-1j 0 0 0 -1-1j 0 0 0 1+1j 0 0 0 1+1j 0 0 0 1+1j 0 0 0 1+1j 0 0, zeros(1, 5)].';
+    
+    % Transmit STF in both 10 MHz subchannels, apply tone rotation to upper channel
+    stf_f20 = [stf_f10; 1j*stf_f10];
+    
+    % Apply spectral shaping window
+    % TODO: check if window should instead be applied individually to each subchannel
+    stf_f = stf_f20(1:64*n_chan_temp).*kaiser(64*n_chan_temp, w_beta);
+    
+    % Base STF waveform
+    stf_wf_base20 = 1/sqrt(12*n_chan_temp)*dot11_ifft(stf_f, 64*n_chan_temp);
+    
+    % Append CP
+    stf_wf_20 = [stf_wf_base20(32*n_chan_temp+1:64*n_chan_temp); stf_wf_base20; stf_wf_base20];
+end
+
+% Choose appropriate value for 10 MHz / 20 MHz
+if (n_chan == 1)
+    stf_wf = stf_wf_10;
+elseif (n_chan == 2)
+    stf_wf = stf_wf_20;
+else
+    error('not supported')
+end
 
 end

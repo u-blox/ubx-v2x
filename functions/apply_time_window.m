@@ -1,9 +1,9 @@
 function out = apply_time_window(in, enabled)
 %APPLY_TIME_WINDOW Apply time-domain window to improve spectral shape
 %
-%   Author: Ioannis Sarris, u-blox
-%   email: ioannis.sarris@u-blox.com
-%   February 2019; Last revision: 19-February-2019
+%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+%   contact email: ioannis.sarris@u-blox.com
+%   August 2018; Last revision: 04-December-2020
 
 % Copyright (C) u-blox
 %
@@ -39,4 +39,6 @@ if enabled
     
     % Perform widnowing on preamble & data fields
     out(idx + 1, :) = (out(idx + 1, :) + out(idx - 63, :))/2;
+end
+
 end

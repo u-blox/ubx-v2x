@@ -1,0 +1,302 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of sim_rx</title>
+  <meta name="keywords" content="sim_rx">
+  <meta name="description" content="SIM_RX High-level receiver function">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; sim_rx.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>sim_rx
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>SIM_RX High-level receiver function</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [err] = sim_rx(rx_wf, data_f_mtx, RX, TX, s0_len) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">SIM_RX High-level receiver function
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="apply_cfo.html" class="code" title="function out = apply_cfo(in, cfo)">apply_cfo</a>	APPLY_CFO Apply frequency offset to input waveform</li><li><a href="chan_est.html" class="code" title="function h_est = chan_est(r, n_chan)">chan_est</a>	CHAN_EST Channel estimation algorithm, using LTF preamble</li><li><a href="crc32.html" class="code" title="function out = crc32(in)">crc32</a>	CRC32 Appends CRC32 on an input bitstream</li><li><a href="crc8.html" class="code" title="function out = crc8(in_bits)">crc8</a>	CRC8 Computes CRC8 on an input bitstream</li><li><a href="data_rx.html" class="code" title="function [descr_msg] = data_rx(PHY, RX, rx_wf, idx0, h_est, data_f_mtx, r_cfo, snr_avg)">data_rx</a>	DATA_RX Receiver processing of all DATA OFDM symbols</li><li><a href="fine_sync.html" class="code" title="function [f_idx, f_cfo] = fine_sync(in, c_idx, n_chan)">fine_sync</a>	FINE_SYNC Fine synchronization</li><li><a href="ngv_chan_est.html" class="code" title="function h_est = ngv_chan_est(r, ofdm_off, n_ss, n_chan, n_nltf_samples)">ngv_chan_est</a>	NGV_CHAN_EST Channel estimation algorithm, using NGV-LTF preamble</li><li><a href="ngv_sig_parse.html" class="code" title="function PHY = ngv_sig_parse(NGV_SIG_CFG, sig_length)">ngv_sig_parse</a>	NGV_SIG_PARSE Parse NGV-SIG parameters into PHY structure</li><li><a href="ngv_sig_rx.html" class="code" title="function [NGV_SIG_CFG] = ngv_sig_rx(x_d_cfo, snr)">ngv_sig_rx</a>	NGV_SIG_RX NGV-SIG message receiver</li><li><a href="pdet.html" class="code" title="function [idx, c_cfo, err] = pdet(in, s0_len, pdet_thold, n_chan)">pdet</a>	PDET Detects start of packet</li><li><a href="sig_parse.html" class="code" title="function PHY = sig_parse(SIG_CFG)">sig_parse</a>	SIG_PARSE Parse SIG parameters into PHY structure</li><li><a href="sig_pre_rx.html" class="code" title="function [x_p, x_d_cfo, snr, r_phase_off, llr_in] = sig_pre_rx(r, h_est, data_idx, pilot_idx, n_chan, prev_cfo_corr, new_poff_weight)">sig_pre_rx</a>	SIG_PRE_RX Get f-domain SIG messages (L-SIG, RL-SIG, NGV-SIG, RNGV-SIG) for preamble autodetection and as input to decoder</li><li><a href="sig_rx.html" class="code" title="function [SIG_CFG] = sig_rx(x_d, snr)">sig_rx</a>	SIG_RX SIG message receiver/deparser</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="batch_sim.html" class="code" title="">batch_sim</a>	BATCH_SIM - Batch simulation script</li><li><a href="codegen_script.html" class="code" title="">codegen_script</a>	CODEGEN_SCRIPT - Generates MEX files for acceleration purposes</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [err] = sim_rx(rx_wf, data_f_mtx, RX, TX, s0_len)</a>
+0002 <span class="comment">%SIM_RX High-level receiver function</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">% Needed for code generation</span>
+0027 coder.varsize(<span class="string">'rx_out'</span>, [8*4096 1], [1 0]);
+0028 
+0029 <span class="comment">% SIG data/pilot subcarrier indices</span>
+0030 sig_data_idx = [-26:-22 -20:-8 -6:-1 1:6 8:20 22:26].' + 33;
+0031 sig_pilot_idx = [-21 -7 7 21].' + 33;
+0032 
+0033 <span class="comment">% Indicate the number of 10 MHz channels on which the receiver operates (1: single 10 MHz channel, 2: two adjacacent 10 MHz channels for 20 MHz reception)</span>
+0034 <span class="comment">% Used to set the FFT size (64*n_chan_rx) and the number of time-domain samples per OFDM symbol (80*n_chan_rx)</span>
+0035 <span class="comment">% Note: The non-common 20 MHz 802.11p requires n_chan_rx=1</span>
+0036 n_chan_rx = RX.n_chan;
+0037 
+0038 <span class="comment">% Packet detection / coarse CFO estimation</span>
+0039 [c_idx, c_cfo, pdet_err] = <a href="pdet.html" class="code" title="function [idx, c_cfo, err] = pdet(in, s0_len, pdet_thold, n_chan)">pdet</a>(rx_wf, s0_len, RX.pdet_thold, n_chan_rx);
+0040 
+0041 <span class="comment">% If no packet error, proceed with packet decoding</span>
+0042 err = 0;
+0043 <span class="keyword">if</span> pdet_err
+0044     err = 1;
+0045 <span class="keyword">else</span>
+0046     <span class="comment">% Coarse CFO correction</span>
+0047     rx_wf = <a href="apply_cfo.html" class="code" title="function out = apply_cfo(in, cfo)">apply_cfo</a>(rx_wf, -c_cfo/5.9e9*10e6);
+0048     
+0049     <span class="comment">% Fine synchronization / fine CFO estimation based on L-LTF</span>
+0050     [f_idx, f_cfo] = <a href="fine_sync.html" class="code" title="function [f_idx, f_cfo] = fine_sync(in, c_idx, n_chan)">fine_sync</a>(rx_wf, c_idx, n_chan_rx);
+0051     
+0052     <span class="comment">% Fine CFO correction</span>
+0053     rx_wf = <a href="apply_cfo.html" class="code" title="function out = apply_cfo(in, cfo)">apply_cfo</a>(rx_wf, -f_cfo/5.9e9*10e6);
+0054     
+0055     <span class="comment">% Channel estimation based on L-LTF</span>
+0056     wf_in_ltf = rx_wf(f_idx:f_idx + 128*n_chan_rx-1,:);
+0057     h_est = <a href="chan_est.html" class="code" title="function h_est = chan_est(r, n_chan)">chan_est</a>(wf_in_ltf, n_chan_rx);
+0058     <span class="comment">% f_idx is 24/48 symbols into L-LTF (8/16 symbols before the end of the CP)</span>
+0059     <span class="comment">% From now on, idx0 always points to the first sample of the CP in each OFDM symbol</span>
+0060     <span class="comment">% This provides more flexibility, e.g. for different NGV-LTF formats</span>
+0061     idx0 = f_idx + 128*n_chan_rx + 8*n_chan_rx;
+0062     
+0063     <span class="comment">% Keep track of the number of symbols since the last channel estimate</span>
+0064     sym_since_est = 1;
+0065     
+0066     <span class="comment">% SNR estimation</span>
+0067     i_rx = 1;
+0068     <span class="comment">% TODO: estimate SNR also for multiple RX chains</span>
+0069     <span class="comment">% TODO: estimate SNR individually for each 10 MHz subchannel</span>
+0070     snr_avg = 2/(mean(abs(wf_in_ltf(1:64*n_chan_rx,i_rx) - wf_in_ltf(64*n_chan_rx+1:128*n_chan_rx,i_rx)).^2));
+0071     
+0072     <span class="comment">% Initial L-SIG reception</span>
+0073     wf_in = rx_wf(idx0:idx0 + 80*n_chan_rx-1,:);
+0074     prev_cfo_corr = 0;
+0075     new_cfo_weight = 0; <span class="comment">% 0: disable CFO correction for L-SIG</span>
+0076     [x_p0, x_d0_cfo, snr0, r_phase_diff0, llr_lsig] = <a href="sig_pre_rx.html" class="code" title="function [x_p, x_d_cfo, snr, r_phase_off, llr_in] = sig_pre_rx(r, h_est, data_idx, pilot_idx, n_chan, prev_cfo_corr, new_poff_weight)">sig_pre_rx</a>(wf_in, h_est, sig_data_idx, sig_pilot_idx, n_chan_rx, prev_cfo_corr, new_cfo_weight);
+0077     r_cfo = r_phase_diff0 * new_cfo_weight;
+0078     L_SIG_CFG = <a href="sig_rx.html" class="code" title="function [SIG_CFG] = sig_rx(x_d, snr)">sig_rx</a>(x_d0_cfo, snr0);
+0079     idx0 = idx0 + 80*n_chan_rx;
+0080     sym_since_est = 2;
+0081     
+0082     <span class="comment">% Check for RL-SIG</span>
+0083     wf_in = rx_wf(idx0:idx0 + 80*n_chan_rx-1,:);
+0084     prev_cfo_corr = r_cfo * sym_since_est;
+0085     new_cfo_weight = 0; <span class="comment">% 0: disable CFO correction for RL-SIG</span>
+0086     [x_p1, x_d1_cfo, snr1, r_phase_diff1, llr_rlsig] = <a href="sig_pre_rx.html" class="code" title="function [x_p, x_d_cfo, snr, r_phase_off, llr_in] = sig_pre_rx(r, h_est, data_idx, pilot_idx, n_chan, prev_cfo_corr, new_poff_weight)">sig_pre_rx</a>(wf_in, h_est, sig_data_idx, sig_pilot_idx, n_chan_rx, prev_cfo_corr, new_cfo_weight);
+0087     r_cfo = (r_cfo * sym_since_est + new_cfo_weight *  r_phase_diff1) / sym_since_est;
+0088     idx0 = idx0 + 80*n_chan_rx;
+0089     sym_since_est = 3;
+0090     
+0091     <span class="comment">% Correlation estimation L-SIG -- RL-SIG</span>
+0092     <span class="comment">% Use correlation of the signs of the demodulated values (directly related to the Hamming distance (hd))</span>
+0093     sig_cor_hd = sign(real([x_d0_cfo]))'*sign(real([x_d1_cfo]));
+0094     
+0095     <span class="comment">% For best performance, correlation threshold should depend on the received SNR (still WIP)</span>
+0096     autodet.thr_vec  = [14 16 18 22];
+0097     autodet.snr_vec  = [-100, 2, 5, 8];
+0098     
+0099     threshold = interp1(autodet.snr_vec, autodet.thr_vec, pow2db(snr_avg),<span class="string">'previous'</span>,<span class="string">'extrap'</span>);
+0100     ngv_detected = (sig_cor_hd &gt; threshold);
+0101     
+0102     <span class="comment">% Continue processing depending on whether packet is legacy or NGV</span>
+0103     <span class="keyword">if</span> (ngv_detected)
+0104         <span class="keyword">if</span> (TX.ppdu_fmt ~= 2)
+0105             err = 7;
+0106             <span class="keyword">return</span>
+0107         <span class="keyword">end</span>
+0108         <span class="comment">% Average over two SIG fields and decode</span>
+0109         COMB_SIG_CFG = <a href="sig_rx.html" class="code" title="function [SIG_CFG] = sig_rx(x_d, snr)">sig_rx</a>((x_d0_cfo+x_d1_cfo)/2, snr0+snr1);
+0110         
+0111         <span class="keyword">if</span> (COMB_SIG_CFG.sig_err <span class="keyword">...</span><span class="comment">   % L-SIG error (e.g., from parity bit or bad MCS)</span>
+0112                 || COMB_SIG_CFG.mcs ~= 0)    <span class="comment">% L-SIG MCS must be 0 in NGV transmissions</span>
+0113             err = 2;
+0114             <span class="keyword">return</span>
+0115         <span class="keyword">end</span>
+0116         
+0117         <span class="comment">% NGV-SIG samples</span>
+0118         wf_in = rx_wf(idx0:idx0 + 80*n_chan_rx-1,:);
+0119         prev_cfo_corr = r_cfo * sym_since_est;
+0120         new_cfo_weight = 0.5;
+0121         [x_p2, x_d2_cfo, snr2, r_phase_diff2] = <a href="sig_pre_rx.html" class="code" title="function [x_p, x_d_cfo, snr, r_phase_off, llr_in] = sig_pre_rx(r, h_est, data_idx, pilot_idx, n_chan, prev_cfo_corr, new_poff_weight)">sig_pre_rx</a>(wf_in, h_est, sig_data_idx, sig_pilot_idx, n_chan_rx, prev_cfo_corr, new_cfo_weight);
+0122         r_cfo = (r_cfo * sym_since_est + new_cfo_weight *  r_phase_diff2) / sym_since_est;
+0123         idx0 = idx0 + 80*n_chan_rx;
+0124         sym_since_est = 4;
+0125         
+0126         <span class="comment">% RNGV-SIG samples</span>
+0127         wf_in = rx_wf(idx0:idx0 + 80*n_chan_rx-1,:);
+0128         prev_cfo_corr = r_cfo * sym_since_est;
+0129         new_cfo_weight = 0.5;
+0130         [x_p3, x_d3_cfo, snr3, r_phase_diff3] = <a href="sig_pre_rx.html" class="code" title="function [x_p, x_d_cfo, snr, r_phase_off, llr_in] = sig_pre_rx(r, h_est, data_idx, pilot_idx, n_chan, prev_cfo_corr, new_poff_weight)">sig_pre_rx</a>(wf_in, h_est, sig_data_idx, sig_pilot_idx, n_chan_rx, prev_cfo_corr, new_cfo_weight);
+0131         r_cfo = (r_cfo * sym_since_est + new_cfo_weight *  r_phase_diff3) / sym_since_est;
+0132         idx0 = idx0 + 80*n_chan_rx;
+0133         sym_since_est = 5;
+0134         
+0135         <span class="comment">% Combined NGV-SIG decoding</span>
+0136         NGV_SIG_CFG = <a href="ngv_sig_rx.html" class="code" title="function [NGV_SIG_CFG] = ngv_sig_rx(x_d_cfo, snr)">ngv_sig_rx</a>((x_d2_cfo+x_d3_cfo)/2, snr2+snr3);
+0137         
+0138         <span class="comment">% return if NGV-SIG error detected</span>
+0139         <span class="keyword">if</span> NGV_SIG_CFG.sig_err
+0140             err = 6;
+0141             <span class="keyword">return</span>
+0142         <span class="keyword">end</span>
+0143         
+0144         <span class="comment">% Parse parameters into PHY structure</span>
+0145         PHY = <a href="ngv_sig_parse.html" class="code" title="function PHY = ngv_sig_parse(NGV_SIG_CFG, sig_length)">ngv_sig_parse</a>(NGV_SIG_CFG, COMB_SIG_CFG.length);
+0146         
+0147         <span class="comment">% additional checks for undetected errors</span>
+0148         <span class="keyword">if</span> (PHY.n_sym ~= size(data_f_mtx, 2) )
+0149             <span class="comment">%fprintf('undetected: wrong packet length / n_sym. detected %d should be %d\n',PHY.n_sym, size(data_f_mtx, 2))</span>
+0150             err = 4;
+0151             <span class="keyword">return</span>
+0152         <span class="keyword">end</span>
+0153         <span class="keyword">if</span> (TX.mid ~= PHY.mid)
+0154             err = 4;
+0155             <span class="keyword">return</span>
+0156         <span class="keyword">end</span>
+0157         
+0158         <span class="comment">% NGV-STF (FIX, does nothing for now)</span>
+0159         idx0 = idx0 + 80*n_chan_rx;
+0160         sym_since_est = 6;
+0161         
+0162         <span class="comment">% NGV-LTF updated channel estimation</span>
+0163         n_nltf_samp_tot = PHY.n_ss * PHY.n_ngvltf_samp; <span class="comment">% TODO: double check this for 10 MHz packets in 20 MHz RX mode</span>
+0164         cp_len = n_chan_rx*16;
+0165         ofdm_off = cp_len/2;
+0166         wf_in = rx_wf( ((idx0+cp_len):(idx0+n_nltf_samp_tot-1)) - ofdm_off,:);
+0167         <span class="comment">% TODO: modify ngv_chan_est to support reception of 10 MHz waveforms when in 20 MHz RX mode</span>
+0168         h_est = <a href="ngv_chan_est.html" class="code" title="function h_est = ngv_chan_est(r, ofdm_off, n_ss, n_chan, n_nltf_samples)">ngv_chan_est</a>(wf_in, ofdm_off, PHY.n_ss, n_chan_rx, PHY.n_ngvltf_samp);
+0169         idx0 = idx0 + n_nltf_samp_tot;
+0170     <span class="keyword">else</span>
+0171         <span class="keyword">if</span> (TX.ppdu_fmt ~= 1)
+0172             err = 7;
+0173             <span class="keyword">return</span>
+0174         <span class="keyword">end</span>
+0175         <span class="comment">% Already tried to read RL-SIG, backtrack the RL-SIG samples</span>
+0176         idx0 = idx0 - 80*n_chan_rx;
+0177         
+0178         <span class="comment">% Parse L-SIG</span>
+0179         PHY = <a href="sig_parse.html" class="code" title="function PHY = sig_parse(SIG_CFG)">sig_parse</a>(L_SIG_CFG);
+0180         <span class="keyword">if</span> L_SIG_CFG.sig_err    <span class="comment">% L-SIG error (e.g., from parity bit or bad MCS)</span>
+0181             err = 2;
+0182             <span class="keyword">return</span>
+0183         <span class="keyword">end</span>
+0184         <span class="keyword">if</span> (PHY.psdu_length ~= TX.payload_len)
+0185             <span class="comment">%fprintf('11p: undetected sig error: wrong length\n')</span>
+0186             err = 4;
+0187             <span class="keyword">return</span>
+0188         <span class="keyword">end</span>
+0189         <span class="keyword">if</span> (PHY.mcs ~= TX.mcs)
+0190             <span class="comment">%fprintf('11p: undetected sig error: wrong mcs\n')</span>
+0191             err = 4;
+0192             <span class="keyword">return</span>
+0193         <span class="keyword">end</span>
+0194     <span class="keyword">end</span>
+0195     
+0196     <span class="comment">% Data processing</span>
+0197     [rx_out] = <a href="data_rx.html" class="code" title="function [descr_msg] = data_rx(PHY, RX, rx_wf, idx0, h_est, data_f_mtx, r_cfo, snr_avg)">data_rx</a>(PHY, RX, rx_wf, idx0, h_est, data_f_mtx, r_cfo, snr_avg);
+0198     
+0199     <span class="keyword">if</span> (PHY.ppdu_fmt == 1)
+0200         len = PHY.psdu_length;
+0201     <span class="keyword">elseif</span> (PHY.ppdu_fmt == 2)
+0202         <span class="comment">% For NGV transmissions, the payload length (=MPDU length) must be obtained from the A-MPDU header</span>
+0203         <span class="comment">% A-MPDU header starts on the first bit of the PSDU, but rx_out includes also 9 unused bits from service field</span>
+0204         ampdu_eof = rx_out(10);
+0205         ampdu_res = rx_out(11);
+0206         ampdu_len = bi2de(rx_out(12:25)', <span class="string">'left-msb'</span>);
+0207         ampdu_crc_val = <a href="crc8.html" class="code" title="function out = crc8(in_bits)">crc8</a>(rx_out(10:33)); <span class="comment">% TODO: check MSB mode;</span>
+0208         <span class="comment">% CRC is performed over whole bit sequence, check result for magic value</span>
+0209         ampdu_crc_ok = (ampdu_crc_val == 12);
+0210         ampdu_sig = bi2de(rx_out(34:41)', <span class="string">'left-msb'</span>);
+0211         <span class="keyword">if</span> (ampdu_eof == 1 &amp;&amp; ampdu_res == 1 &amp;&amp; ampdu_sig == 78 &amp;&amp; ampdu_crc_ok)
+0212             <span class="comment">% valid A-MPDU header</span>
+0213             len = ampdu_len;
+0214             rx_out = rx_out(33:end); <span class="comment">% Discard A-MPDU header</span>
+0215             <span class="keyword">if</span> (ampdu_len + 4 &gt; PHY.psdu_length)
+0216                 <span class="comment">% A-MPDU header denotes a packet length that cannot fit into PSDU, must be an error</span>
+0217                 err = 8;
+0218                 <span class="keyword">return</span>
+0219             <span class="keyword">end</span>
+0220             <span class="keyword">if</span> (ampdu_len ~= TX.payload_len)
+0221                 <span class="comment">% undetected length error</span>
+0222                 err = 4;
+0223                 <span class="keyword">return</span>
+0224             <span class="keyword">end</span>
+0225         <span class="keyword">else</span>
+0226             <span class="comment">% A-MPDU error detected</span>
+0227             err = 8;
+0228             <span class="keyword">return</span>
+0229         <span class="keyword">end</span>
+0230     <span class="keyword">else</span>
+0231         error(<span class="string">'ppdu_fmt not supported'</span>)
+0232     <span class="keyword">end</span>
+0233     
+0234     <span class="comment">% Check if payload length is correct and perform CRC</span>
+0235     <span class="keyword">if</span> (len &gt;= 5)
+0236         <span class="comment">% Convert to bytes</span>
+0237         pld_bytes = bi2de(reshape(rx_out(10:10 + len*8 - 1), 8, len)');
+0238         
+0239         <span class="comment">% Calculate CRC-32</span>
+0240         pld_crc32 = <a href="crc32.html" class="code" title="function out = crc32(in)">crc32</a>(pld_bytes(1:len - 4)');
+0241         
+0242         <span class="comment">% Check CRC for errors</span>
+0243         <span class="keyword">if</span> (any(pld_crc32(len - 3:len) ~= pld_bytes(len - 3:len)'))
+0244             err = 3;
+0245         <span class="keyword">end</span>
+0246     <span class="keyword">else</span>
+0247         err = 2;
+0248     <span class="keyword">end</span>
+0249 <span class="keyword">end</span>
+0250 
+0251 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

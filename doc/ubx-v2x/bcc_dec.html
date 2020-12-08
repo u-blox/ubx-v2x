@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of bcc_dec</title>
+  <meta name="keywords" content="bcc_dec">
+  <meta name="description" content="BCC_DEC Decodes BCC encoded LLR stream">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; bcc_dec.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>bcc_dec
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>BCC_DEC Decodes BCC encoded LLR stream</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function bits_out = bcc_dec(llr_in, r_num, bcc_init) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">BCC_DEC Decodes BCC encoded LLR stream
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="data_rx.html" class="code" title="function [descr_msg] = data_rx(PHY, RX, rx_wf, idx0, h_est, data_f_mtx, r_cfo, snr_avg)">data_rx</a>	DATA_RX Receiver processing of all DATA OFDM symbols</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function bits_out = bcc_dec(llr_in, r_num, bcc_init)</a>
+0002 <span class="comment">%BCC_DEC Decodes BCC encoded LLR stream</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">% Store this as a persistent variable to avoid reinitialization</span>
+0027 <span class="keyword">persistent</span> vit_dec
+0028 
+0029 <span class="comment">% Needed for code generation</span>
+0030 coder.varsize(<span class="string">'bits_out'</span>, [312 1], [1 0]);
+0031 
+0032 <span class="comment">% Create or reset system object</span>
+0033 <span class="keyword">if</span> isempty(vit_dec)
+0034     vit_dec = comm.ViterbiDecoder(<span class="keyword">...</span>
+0035         <span class="string">'TrellisStructure'</span>, poly2trellis(7, [133 171]), <span class="keyword">...</span>
+0036         <span class="string">'InputFormat'</span>, <span class="string">'Unquantized'</span>, <span class="keyword">...</span>
+0037         <span class="string">'TracebackDepth'</span>, 96, <span class="keyword">...</span>
+0038         <span class="string">'TerminationMethod'</span>, <span class="string">'Continuous'</span>);
+0039 <span class="keyword">elseif</span> bcc_init
+0040     reset(vit_dec);
+0041 <span class="keyword">end</span>
+0042 
+0043 <span class="comment">% Select Viterbi decoder depuncturing pattern according to code-rate</span>
+0044 <span class="keyword">switch</span> r_num
+0045     <span class="keyword">case</span> 2
+0046         punct_pat = logical([1 1 1 0]);
+0047         f = 2*2/3;
+0048     <span class="keyword">case</span> 3
+0049         punct_pat = logical([1 1 1 0 0 1]);
+0050         f = 2*3/4;
+0051     <span class="keyword">case</span> 5
+0052         punct_pat = logical([1 1 1 0 0 1 1 0 0 1]);
+0053         f = 2*5/6;
+0054     <span class="keyword">otherwise</span>
+0055         punct_pat = true;
+0056         f = 2*1/2;
+0057 <span class="keyword">end</span>
+0058 
+0059 <span class="comment">% Input codeword length</span>
+0060 llr_len = size(llr_in, 1);
+0061 
+0062 <span class="comment">% Repeat depuncturing pattern as many times as needed to cover whole output codeword</span>
+0063 idx = repmat(punct_pat, 1, llr_len*f/length(punct_pat));
+0064 
+0065 <span class="comment">% Depuncturing</span>
+0066 llr_in_dep = zeros(round(llr_len*f/2)*2, 1);
+0067 llr_in_dep(idx) = llr_in;
+0068 
+0069 <span class="comment">% Viterbi decoder rate 1/2</span>
+0070 bits_out = step(vit_dec, llr_in_dep);
+0071 
+0072 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

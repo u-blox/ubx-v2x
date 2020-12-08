@@ -1,0 +1,433 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of LDPCCode</title>
+  <meta name="keywords" content="LDPCCode">
+  <meta name="description" content="Function taken from https://github.com/tavildar/LDPC and u-blox claims no">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; LDPCCode.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>LDPCCode
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Function taken from https://github.com/tavildar/LDPC and u-blox claims no</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>This is a script file. </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Function taken from https://github.com/tavildar/LDPC and u-blox claims no
+ rights. Modified to fit the purposes of ubx-v2x.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="LDPCCode.html" class="code" title="">LDPCCode</a>	Function taken from https://github.com/tavildar/LDPC and u-blox claims no</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="LDPCCode.html" class="code" title="">LDPCCode</a>	Function taken from https://github.com/tavildar/LDPC and u-blox claims no</li><li><a href="ldpc_dec_ext.html" class="code" title="function unc_bits_temp = ldpc_dec_ext(Lldpc, rate, cod_bits, iter_count, use_minsum)">ldpc_dec_ext</a>	LDPC_DEC_EXT Decodes a single LDPC codeword using external decoder</li><li><a href="ldpc_enc.html" class="code" title="function cod_bits = ldpc_enc(LDPC, data_in)">ldpc_enc</a>	LDPC_ENC Encodes a binary stream with LDPC coding</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function obj = LDPCCode(block_length, info_length)</a></li><li><a href="#_sub2" class="code">function generate_Gallager_LDPC(obj)</a></li><li><a href="#_sub3" class="code">function efficient_pcm(obj)</a></li><li><a href="#_sub4" class="code">function [codeword] = encode_bits(obj, info_bits)</a></li><li><a href="#_sub5" class="code">function [decoded_codeword, error_vec] = decode_llr(obj, input_llr_vec, max_iter, min_sum)</a></li><li><a href="#_sub6" class="code">function [b] = check_codeword(obj, x)</a></li><li><a href="#_sub7" class="code">function lifted_ldpc(obj, baseH, Z)</a></li><li><a href="#_sub8" class="code">function load_wifi_ldpc(obj, block_length, rate)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">% Function taken from https://github.com/tavildar/LDPC and u-blox claims no</span>
+0002 <span class="comment">% rights. Modified to fit the purposes of ubx-v2x.</span>
+0003 
+0004 classdef <a href="LDPCCode.html" class="code" title="">LDPCCode</a> &lt; handle
+0005     <span class="comment">% Implements LDPC functionality</span>
+0006     <span class="comment">%</span>
+0007     
+0008     properties
+0009         H = 0;
+0010         N = 0;
+0011         K = 0;
+0012         M = 0;
+0013         max_col_weight = 0;
+0014         max_row_weight = 0;
+0015         col_weight_vec = 0;
+0016         row_weight_vec = 0;
+0017         col_mat = 0;
+0018         row_mat = 0;
+0019         Z = 0;
+0020     <span class="keyword">end</span>
+0021     
+0022     methods
+0023         <a name="_sub0" href="#_subfunctions" class="code">function obj = LDPCCode(block_length, info_length)</a>
+0024             obj.N = block_length;
+0025             obj.K = info_length;
+0026             obj.M = obj.N - obj.K;
+0027         <span class="keyword">end</span>
+0028         
+0029         <a name="_sub1" href="#_subfunctions" class="code">function generate_Gallager_LDPC(obj)</a>
+0030             obj.H = zeros(obj.M, obj.N);
+0031             w_r = 6;
+0032             w_c = 3;
+0033             A_0 = zeros(obj.M/w_c, obj.N);
+0034             <span class="keyword">for</span> i_row = 1 : obj.M/w_c
+0035                 A_0(i_row, (i_row - 1)*w_r + 1:i_row*w_r) = 1;
+0036             <span class="keyword">end</span>
+0037             <span class="keyword">for</span> i_col = 1 : w_c
+0038                 obj.H((i_col-1)*obj.M/w_c + 1 : i_col * obj.M/w_c, :) =  A_0(:,randperm(size(A_0,2)));
+0039             <span class="keyword">end</span>
+0040         <span class="keyword">end</span>
+0041         
+0042         <a name="_sub2" href="#_subfunctions" class="code">function efficient_pcm(obj)</a>
+0043             obj.col_weight_vec = sum(obj.H, 1);
+0044             obj.row_weight_vec = sum(obj.H, 2);
+0045             obj.max_col_weight  = max(obj.col_weight_vec);
+0046             obj.max_row_weight  = max(obj.row_weight_vec);
+0047             obj.col_mat = zeros(obj.N, obj.max_col_weight);
+0048             obj.row_mat = zeros(obj.M, obj.max_row_weight);
+0049             <span class="keyword">for</span> i_row = 1 : obj.M
+0050                 index = 1;
+0051                 <span class="keyword">for</span> i_col = 1 : obj.N
+0052                     <span class="keyword">if</span> obj.H(i_row, i_col)
+0053                         obj.row_mat(i_row, index) = i_col;
+0054                         index = index + 1;
+0055                     <span class="keyword">end</span>
+0056                 <span class="keyword">end</span>
+0057             <span class="keyword">end</span>
+0058             
+0059             <span class="keyword">for</span> i_col = 1 : obj.N
+0060                 index = 1;
+0061                 <span class="keyword">for</span> i_row = 1 : obj.M
+0062                     <span class="keyword">if</span> obj.H(i_row, i_col)
+0063                         obj.col_mat(i_col, index) = i_row;
+0064                         index = index + 1;
+0065                     <span class="keyword">end</span>
+0066                 <span class="keyword">end</span>
+0067             <span class="keyword">end</span>
+0068             
+0069         <span class="keyword">end</span>
+0070         
+0071         <a name="_sub3" href="#_subfunctions" class="code">function [codeword] = encode_bits(obj, info_bits)</a>
+0072             <span class="comment">% Does encoding by back substitution</span>
+0073             <span class="comment">% Assumes a very specific structure on the partiy check matrix</span>
+0074             codeword = zeros(obj.N, 1);
+0075             codeword(1:obj.K) = info_bits;
+0076             
+0077             parity = zeros(obj.M, 1);
+0078             <span class="keyword">for</span> i_row = 1 : obj.M
+0079                 <span class="keyword">for</span> i_col = 1 : obj.max_row_weight
+0080                     <span class="keyword">if</span> (obj.row_mat(i_row, i_col) &gt; 0) &amp;&amp; (obj.row_mat(i_row, i_col) &lt;= obj.K)
+0081                         parity(i_row) = parity(i_row) + codeword(obj.row_mat(i_row, i_col));
+0082                     <span class="keyword">end</span>
+0083                 <span class="keyword">end</span>
+0084             <span class="keyword">end</span>
+0085             
+0086             parity = mod(parity, 2);
+0087             
+0088             <span class="keyword">for</span> i = 1 : obj.Z
+0089                 codeword(obj.K + i) = mod(sum(parity(i:obj.Z:end)), 2);
+0090             <span class="keyword">end</span>
+0091             
+0092             <span class="keyword">for</span> i_row = 1 : obj.M
+0093                 <span class="keyword">for</span> i_col = 1 : obj.max_row_weight
+0094                     <span class="keyword">if</span> (obj.row_mat(i_row, i_col) &gt; obj.K) &amp;&amp; (obj.row_mat(i_row, i_col) &lt;= obj.K + obj.Z)
+0095                         parity(i_row) = mod(parity(i_row) + codeword(obj.row_mat(i_row, i_col)), 2);
+0096                     <span class="keyword">end</span>
+0097                 <span class="keyword">end</span>
+0098             <span class="keyword">end</span>
+0099             
+0100             <span class="keyword">for</span> i_col = obj.K + obj.Z + 1 : obj.Z: obj.N
+0101                 codeword(i_col: i_col + obj.Z - 1) = parity(i_col -  obj.K - obj.Z : i_col - obj.K - 1);
+0102                 parity(i_col -  obj.K : i_col - obj.K + obj.Z - 1) = mod(parity(i_col -  obj.K - obj.Z : i_col - obj.K - 1) + <span class="keyword">...</span>
+0103                     parity(i_col -  obj.K : i_col + obj.Z - obj.K - 1), 2);
+0104             <span class="keyword">end</span>
+0105             
+0106         <span class="keyword">end</span>
+0107         
+0108         <a name="_sub4" href="#_subfunctions" class="code">function [decoded_codeword, error_vec] = decode_llr(obj, input_llr_vec, max_iter, min_sum)</a>
+0109             eta = zeros(obj.M, obj.N);
+0110             lasteta = zeros(obj.M, obj.N);
+0111             updated_llr_vec = input_llr_vec;
+0112             error_vec = zeros(max_iter, 1);
+0113             decoded_codeword = false(size(input_llr_vec));
+0114             <span class="keyword">for</span> iter = 1 : max_iter
+0115                 
+0116                 <span class="keyword">for</span> i_m = 1 : obj.M
+0117                     <span class="keyword">for</span> i_n1 = 1 : obj.row_weight_vec(i_m)
+0118                         n1 = obj.row_mat(i_m, i_n1);
+0119                         
+0120                         <span class="keyword">if</span> min_sum
+0121                             pr = 100;
+0122                             
+0123                             <span class="keyword">for</span>  i_n2 = 1 : obj.row_weight_vec(i_m)
+0124                                 <span class="keyword">if</span> i_n1 == i_n2
+0125                                     <span class="keyword">continue</span>;
+0126                                 <span class="keyword">end</span>
+0127                                 n2 = obj.row_mat(i_m, i_n2);
+0128                                 l1 = (updated_llr_vec(n2) - lasteta(i_m, n2));
+0129                                 l1 = min(l1, 20);
+0130                                 l1 = max(l1, -20);
+0131                                 pr = sign(pr) * sign(l1) * min(abs(l1), abs(pr));
+0132                             <span class="keyword">end</span>
+0133                             eta(i_m, n1) = pr;
+0134                         <span class="keyword">else</span>
+0135                             pr = 1;
+0136                             <span class="keyword">for</span>  i_n2 = 1 : obj.row_weight_vec(i_m)
+0137                                 <span class="keyword">if</span> i_n1 == i_n2
+0138                                     <span class="keyword">continue</span>;
+0139                                 <span class="keyword">end</span>
+0140                                 n2 = obj.row_mat(i_m, i_n2);
+0141                                 l1 = (updated_llr_vec(n2) - lasteta(i_m, n2));
+0142                                 l1 = min(l1, 20);
+0143                                 l1 = max(l1, -20);
+0144                                 pr = pr * tanh(l1/2);
+0145                             <span class="keyword">end</span>
+0146                             eta(i_m, n1) = 2 * atanh(pr);
+0147                         <span class="keyword">end</span>
+0148                     <span class="keyword">end</span>
+0149                 <span class="keyword">end</span>
+0150                 
+0151                 lasteta = eta;
+0152                 
+0153                 <span class="keyword">for</span> i_n = 1 : obj.N
+0154                     updated_llr_vec(i_n) = input_llr_vec(i_n);
+0155                     <span class="keyword">for</span> i_m = 1 : obj.col_weight_vec(i_n)
+0156                         m = obj.col_mat(i_n, i_m);
+0157                         updated_llr_vec(i_n) = updated_llr_vec(i_n) + eta(m,i_n);
+0158                     <span class="keyword">end</span>
+0159                     
+0160 <span class="comment">%                     i_m = 1 : obj.col_weight_vec(i_n);</span>
+0161 <span class="comment">%                     m = obj.col_mat(i_n, i_m);</span>
+0162 <span class="comment">%                     updated_llr_vec(i_n) = updated_llr_vec(i_n) + sum(eta(m,i_n));</span>
+0163                 <span class="keyword">end</span>
+0164                 
+0165                 decoded_codeword = (updated_llr_vec &lt; 0);
+0166                 <span class="keyword">if</span> obj.check_codeword(decoded_codeword)
+0167                     <span class="keyword">return</span>;
+0168                 <span class="keyword">else</span>
+0169                     error_vec(iter) = 1;
+0170                 <span class="keyword">end</span>
+0171             <span class="keyword">end</span>
+0172             
+0173         <span class="keyword">end</span>
+0174         
+0175         <a name="_sub5" href="#_subfunctions" class="code">function [b] = check_codeword(obj, x)</a>
+0176             b = 1;
+0177             <span class="keyword">for</span> i_check = 1 : obj.M
+0178                 c = 0;
+0179                 <span class="keyword">for</span> i_n = 1  : obj.row_weight_vec(i_check)
+0180                     c = c + x(obj.row_mat(i_check, i_n));
+0181                 <span class="keyword">end</span>
+0182                 <span class="keyword">if</span> mod(c, 2) == 1
+0183                     b = 0;
+0184                     <span class="keyword">break</span>;
+0185                 <span class="keyword">end</span>
+0186             <span class="keyword">end</span>
+0187         <span class="keyword">end</span>
+0188         
+0189         
+0190         <a name="_sub6" href="#_subfunctions" class="code">function lifted_ldpc(obj, baseH, Z)</a>
+0191             <span class="comment">%             circ_mat_array = cell(Z, 1);</span>
+0192             <span class="comment">%             for i = 0 : Z - 1</span>
+0193             <span class="comment">%                 circ_mat = zeros(Z,Z);</span>
+0194             <span class="comment">%                 for j = 0 : Z - 1</span>
+0195             <span class="comment">%                     circ_mat(j + 1, mod(j + i, Z) + 1) = 1;</span>
+0196             <span class="comment">%                 end</span>
+0197             <span class="comment">%                 circ_mat_array{i + 1} = circ_mat;</span>
+0198             <span class="comment">%             end</span>
+0199             obj.N = Z *  size(baseH, 2);
+0200             obj.M = Z *  size(baseH, 1);
+0201             obj.K = obj.N - obj.M;
+0202             obj.H = zeros(obj.M, obj.N);
+0203             
+0204             <span class="keyword">for</span> i_row = 1 : size(baseH, 1)
+0205                 <span class="keyword">for</span> i_col = 1 : size(baseH, 2)
+0206                     
+0207                     idx = baseH(i_row, i_col);
+0208                     <span class="keyword">if</span> (idx &gt; -1)
+0209                         <span class="comment">%                         obj.H( (i_row-1)*Z + 1 : i_row * Z, (i_col-1)*Z + 1 : i_col*Z) = circ_mat_array{idx + 1};</span>
+0210                         obj.H( (i_row-1)*Z + 1 : i_row * Z, (i_col-1)*Z + 1 : i_col*Z) = circshift(eye(Z), -idx);
+0211                     <span class="keyword">end</span>
+0212                     
+0213                 <span class="keyword">end</span>
+0214             <span class="keyword">end</span>
+0215             
+0216             obj.efficient_pcm();
+0217             
+0218         <span class="keyword">end</span>
+0219         
+0220         
+0221         <a name="_sub7" href="#_subfunctions" class="code">function load_wifi_ldpc(obj, block_length, rate)</a>
+0222             
+0223             H_1296_1_2 = [40 -1 -1 -1 22 -1 49 23 43 -1 -1 -1 1 0 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1;
+0224                 50 1 -1 -1 48 35 -1 -1 13 -1 30 -1 -1 0 0 -1 -1 -1 -1 -1 -1 -1 -1 -1;
+0225                 39 50 -1 -1 4 -1 2 -1 -1 -1 -1 49 -1 -1 0 0 -1 -1 -1 -1 -1 -1 -1 -1;
+0226                 33 -1 -1 38 37 -1 -1 4 1 -1 -1 -1 -1 -1 -1 0 0 -1 -1 -1 -1 -1 -1 -1;
+0227                 45 -1 -1 -1 0 22 -1 -1 20 42 -1 -1 -1 -1 -1 -1 0 0 -1 -1 -1 -1 -1 -1;
+0228                 51 -1 -1 48 35 -1 -1 -1 44 -1 18 -1 -1 -1 -1 -1 -1 0 0 -1 -1 -1 -1 -1;
+0229                 47 11 -1 -1 -1 17 -1 -1 51 -1 -1 -1 0 -1 -1 -1 -1 -1 0 0 -1 -1 -1 -1;
+0230                 5 -1 25 -1 6 -1 45 -1 13 40 -1 -1 -1 -1 -1 -1 -1 -1 -1 0 0 -1 -1 -1;
+0231                 33 -1 -1 34 24 -1 -1 -1 23 -1 -1 46 -1 -1 -1 -1 -1 -1 -1 -1 0 0 -1 -1;
+0232                 1 -1 27 -1 1 -1 -1 -1 38 -1 44 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 0 0 -1;
+0233                 -1 18 -1 -1 23 -1 -1 8 0 35 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 0 0;
+0234                 49 -1 17 -1 30 -1 -1 -1 34 -1 -1 19 1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 0];
+0235             
+0236             H_1296_2_3 = [39 31 22 43 -1 40 4 -1 11 -1 -1 50 -1 -1 -1 6 1 0 -1 -1 -1 -1 -1 -1;
+0237                 25 52 41 2 6 -1 14 -1 34 -1 -1 -1 24 -1 37 -1 -1 0 0 -1 -1 -1 -1 -1;
+0238                 43 31 29 0 21 -1 28 -1 -1 2 -1 -1 7 -1 17 -1 -1 -1 0 0 -1 -1 -1 -1;
+0239                 20 33 48 -1 4 13 -1 26 -1 -1 22 -1 -1 46 42 -1 -1 -1 -1 0 0 -1 -1 -1;
+0240                 45 7 18 51 12 25 -1 -1 -1 50 -1 -1 5 -1 -1 -1 0 -1 -1 -1 0 0 -1 -1;
+0241                 35 40 32 16 5 -1 -1 18 -1 -1 43 51 -1 32 -1 -1 -1 -1 -1 -1 -1 0 0 -1;
+0242                 9 24 13 22 28 -1 -1 37 -1 -1 25 -1 -1 52 -1 13 -1 -1 -1 -1 -1 -1 0 0;
+0243                 32 22 4 21 16 -1 -1 -1 27 28 -1 38 -1 -1 -1 8 1 -1 -1 -1 -1 -1 -1 0];
+0244             
+0245             H_1296_3_4 = [39 40 51 41 3 29 8 36 -1 14 -1 6 -1 33 -1 11 -1 4 1 0 -1 -1 -1 -1;
+0246                 48 21 47 9 48 35 51 -1 38 -1 28 -1 34 -1 50 -1 50 -1 -1 0 0 -1 -1 -1;
+0247                 30 39 28 42 50 39 5 17 -1 6 -1 18 -1 20 -1 15 -1 40 -1 -1 0 0 -1 -1;
+0248                 29 0 1 43 36 30 47 -1 49 -1 47 -1 3 -1 35 -1 34 -1 0 -1 -1 0 0 -1;
+0249                 1 32 11 23 10 44 12 7 -1 48 -1 4 -1 9 -1 17 -1 16 -1 -1 -1 -1 0 0;
+0250                 13 7 15 47 23 16 47 -1 43 -1 29 -1 52 -1 2 -1 53 -1 1 -1 -1 -1 -1 0];
+0251             
+0252             H_1296_5_6 = [48 29 37 52 2 16 6 14 53 31 34 5 18 42 53 31 45 -1 46 52 1 0 -1 -1;
+0253                 17 4 30 7 43 11 24 6 14 21 6 39 17 40 47 7 15 41 19 -1 -1 0 0 -1;
+0254                 7 2 51 31 46 23 16 11 53 40 10 7 46 53 33 35 -1 25 35 38 0 -1 0 0;
+0255                 19 48 41 1 10 7 36 47 5 29 52 52 31 10 26 6 3 2 -1 51 1 -1 -1 0 ];
+0256             
+0257             H_1944_1_2 = [57 -1 -1 -1 50 -1 11 -1 50 -1 79 -1 1 0 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1;
+0258                 3 -1 28 -1 0 -1 -1 -1 55 7 -1 -1 -1 0 0 -1 -1 -1 -1 -1 -1 -1 -1 -1;
+0259                 30 -1 -1 -1 24 37 -1 -1 56 14 -1 -1 -1 -1 0 0 -1 -1 -1 -1 -1 -1 -1 -1;
+0260                 62 53 -1 -1 53 -1 -1 3 35 -1 -1 -1 -1 -1 -1 0 0 -1 -1 -1 -1 -1 -1 -1;
+0261                 40 -1 -1 20 66 -1 -1 22 28 -1 -1 -1 -1 -1 -1 -1 0 0 -1 -1 -1 -1 -1 -1;
+0262                 0 -1 -1 -1 8 -1 42 -1 50 -1 -1 8 -1 -1 -1 -1 -1 0 0 -1 -1 -1 -1 -1;
+0263                 69 79 79 -1 -1 -1 56 -1 52 -1 -1 -1 0 -1 -1 -1 -1 -1 0 0 -1 -1 -1 -1;
+0264                 65 -1 -1 -1 38 57 -1 -1 72 -1 27 -1 -1 -1 -1 -1 -1 -1 -1 0 0 -1 -1 -1;
+0265                 64 -1 -1 -1 14 52 -1 -1 30 -1 -1 32 -1 -1 -1 -1 -1 -1 -1 -1 0 0 -1 -1;
+0266                 -1 45 -1 70 0 -1 -1 -1 77 9 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 0 0 -1;
+0267                 2 56 -1 57 35 -1 -1 -1 -1 -1 12 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 0 0;
+0268                 24 -1 61 -1 60 -1 -1 27 51 -1 -1 16 1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 0];
+0269             
+0270             H_1944_2_3 = [61 75 4 63 56 -1 -1 -1 -1 -1 -1 8 -1 2 17 25 1 0 -1 -1 -1 -1 -1 -1;
+0271                 56 74 77 20 -1 -1 -1 64 24 4 67 -1 7 -1 -1 -1 -1 0 0 -1 -1 -1 -1 -1;
+0272                 28 21 68 10 7 14 65 -1 -1 -1 23 -1 -1 -1 75 -1 -1 -1 0 0 -1 -1 -1 -1;
+0273                 48 38 43 78 76 -1 -1 -1 -1 5 36 -1 15 72 -1 -1 -1 -1 -1 0 0 -1 -1 -1;
+0274                 40 2 53 25 -1 52 62 -1 20 -1 -1 44 -1 -1 -1 -1 0 -1 -1 -1 0 0 -1 -1;
+0275                 69 23 64 10 22 -1 21 -1 -1 -1 -1 -1 68 23 29 -1 -1 -1 -1 -1 -1 0 0 -1;
+0276                 12 0 68 20 55 61 -1 40 -1 -1 -1 52 -1 -1 -1 44 -1 -1 -1 -1 -1 -1 0 0;
+0277                 58 8 34 64 78 -1 -1 11 78 24 -1 -1 -1 -1 -1 58 1 -1 -1 -1 -1 -1 -1 0];
+0278             
+0279             
+0280             H_1944_3_4 = [48 29 28 39 9 61 -1 -1 -1 63 45 80 -1 -1 -1 37 32 22 1 0 -1 -1 -1 -1;
+0281                 4 49 42 48 11 30 -1 -1 -1 49 17 41 37 15 -1 54 -1 -1 -1 0 0 -1 -1 -1;
+0282                 35 76 78 51 37 35 21 -1 17 64 -1 -1 -1 59 7 -1 -1 32 -1 -1 0 0 -1 -1;
+0283                 9 65 44 9 54 56 73 34 42 -1 -1 -1 35 -1 -1 -1 46 39 0 -1 -1 0 0 -1;
+0284                 3 62 7 80 68 26 -1 80 55 -1 36 -1 26 -1 9 -1 72 -1 -1 -1 -1 -1 0 0;
+0285                 26 75 33 21 69 59 3 38 -1 -1 -1 35 -1 62 36 26 -1 -1 1 -1 -1 -1 -1 0];
+0286             
+0287             
+0288             H_1944_5_6 = <span class="keyword">...</span>
+0289                 [ 13 48 80 66 4 74 7 30 76 52 37 60 -1 49 73 31 74 73 23 -1 1 0 -1 -1;
+0290                 69 63 74 56 64 77 57 65 6 16 51 -1 64 -1 68 9 48 62 54 27 -1 0 0 -1;
+0291                 51 15 0 80 24 25 42 54 44 71 71 9 67 35 -1 58 -1 29 -1 53 0 -1 0 0;
+0292                 16 29 36 41 44 56 59 37 50 24 -1 65 4 65 52 -1 4 -1 73 52 1 -1 -1 0];
+0293             
+0294             
+0295             H_648_1_2 = [0 -1 -1 -1 0 0 -1 -1 0 -1 -1 0 1 0 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1;
+0296                 22 0 -1 -1 17 -1 0 0 12 -1 -1 -1 -1 0 0 -1 -1 -1 -1 -1 -1 -1 -1 -1;
+0297                 6 -1 0 -1 10 -1 -1 -1 24 -1 0 -1 -1 -1 0 0 -1 -1 -1 -1 -1 -1 -1 -1;
+0298                 2 -1 -1 0 20 -1 -1 -1 25 0 -1 -1 -1 -1 -1 0 0 -1 -1 -1 -1 -1 -1 -1;
+0299                 23 -1 -1 -1 3 -1 -1 -1 0 -1 9 11 -1 -1 -1 -1 0 0 -1 -1 -1 -1 -1 -1;
+0300                 24 -1 23 1 17 -1 3 -1 10 -1 -1 -1 -1 -1 -1 -1 -1 0 0 -1 -1 -1 -1 -1;
+0301                 25 -1 -1 -1 8 -1 -1 -1 7 18 -1 -1 0 -1 -1 -1 -1 -1 0 0 -1 -1 -1 -1;
+0302                 13 24 -1 -1 0 -1 8 -1 6 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 0 0 -1 -1 -1;
+0303                 7 20 -1 16 22 10 -1 -1 23 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 0 0 -1 -1;
+0304                 11 -1 -1 -1 19 -1 -1 -1 13 -1 3 17 -1 -1 -1 -1 -1 -1 -1 -1 -1 0 0 -1;
+0305                 25 -1 8 -1 23 18 -1 14 9 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 0 0;
+0306                 3 -1 -1 -1 16 -1 -1 2 25 5 -1 -1 1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 0];
+0307             
+0308             H_648_2_3 = [25 26 14 -1 20 -1 2 -1 4 -1 -1 8 -1 16 -1 18 1 0 -1 -1 -1 -1 -1 -1;
+0309                 10 9 15 11 -1 0 -1 1 -1 -1 18 -1 8 -1 10 -1 -1 0 0 -1 -1 -1 -1 -1;
+0310                 16 2 20 26 21 -1 6 -1 1 26 -1 7 -1 -1 -1 -1 -1 -1 0 0 -1 -1 -1 -1;
+0311                 10 13 5 0 -1 3 -1 7 -1 -1 26 -1 -1 13 -1 16 -1 -1 -1 0 0 -1 -1 -1;
+0312                 23 14 24 -1 12 -1 19 -1 17 -1 -1 -1 20 -1 21 -1 0 -1 -1 -1 0 0 -1 -1;
+0313                 6 22 9 20 -1 25 -1 17 -1 8 -1 14 -1 18 -1 -1 -1 -1 -1 -1 -1 0 0 -1;
+0314                 14 23 21 11 20 -1 24 -1 18 -1 19 -1 -1 -1 -1 22 -1 -1 -1 -1 -1 -1 0 0;
+0315                 17 11 11 20 -1 21 -1 26 -1 3 -1 -1 18 -1 26 -1 1 -1 -1 -1 -1 -1 -1 0];
+0316             
+0317             H_648_3_4 = [16 17 22 24 9 3 14 -1 4 2 7 -1 26 -1 2 -1 21 -1 1 0 -1 -1 -1 -1;
+0318                 25 12 12 3 3 26 6 21 -1 15 22 -1 15 -1 4 -1 -1 16 -1 0 0 -1 -1 -1;
+0319                 25 18 26 16 22 23 9 -1 0 -1 4 -1 4 -1 8 23 11 -1 -1 -1 0 0 -1 -1;
+0320                 9 7 0 1 17 -1 -1 7 3 -1 3 23 -1 16 -1 -1 21 -1 0 -1 -1 0 0 -1;
+0321                 24 5 26 7 1 -1 -1 15 24 15 -1 8 -1 13 -1 13 -1 11 -1 -1 -1 -1 0 0;
+0322                 2 2 19 14 24 1 15 19 -1 21 -1 2 -1 24 -1 3 -1 2 1 -1 -1 -1 -1 0];
+0323             
+0324             H_648_5_6 = [17 13 8 21 9 3 18 12 10 0 4 15 19 2 5 10 26 19 13 13 1 0 -1 -1;
+0325                 3 12 11 14 11 25 5 18 0 9 2 26 26 10 24 7 14 20 4 2 -1 0 0 -1;
+0326                 22 16 4 3 10 21 12 5 21 14 19 5 -1 8 5 18 11 5 5 15 0 -1 0 0;
+0327                 7 7 14 14 4 16 16 24 24 10 1 7 15 6 10 26 8 18 21 14 1 -1 -1 0];
+0328             
+0329             <span class="keyword">if</span> block_length == 648
+0330                 obj.Z = 27;
+0331                 <span class="keyword">if</span> rate == 1/2
+0332                     baseH = H_648_1_2;
+0333                 <span class="keyword">elseif</span> rate == 2/3
+0334                     baseH = H_648_2_3;
+0335                 <span class="keyword">elseif</span> rate == 3/4
+0336                     baseH = H_648_3_4;
+0337                 <span class="keyword">elseif</span> rate == 5/6
+0338                     baseH = H_648_5_6;
+0339                 <span class="keyword">else</span>
+0340                     disp(<span class="string">'Not supported rate value'</span>);
+0341                     <span class="keyword">return</span>;
+0342                 <span class="keyword">end</span>
+0343             <span class="keyword">elseif</span> block_length == 1296
+0344                 obj.Z = 54;
+0345                 <span class="keyword">if</span> rate == 1/2
+0346                     baseH = H_1296_1_2;
+0347                 <span class="keyword">elseif</span> rate == 2/3
+0348                     baseH = H_1296_2_3;
+0349                 <span class="keyword">elseif</span> rate == 3/4
+0350                     baseH = H_1296_3_4;
+0351                 <span class="keyword">elseif</span> rate == 5/6
+0352                     baseH = H_1296_5_6;
+0353                 <span class="keyword">else</span>
+0354                     disp(<span class="string">'Not supported rate value'</span>);
+0355                     <span class="keyword">return</span>;
+0356                 <span class="keyword">end</span>
+0357             <span class="keyword">elseif</span> block_length == 1944
+0358                 obj.Z = 81;
+0359                 <span class="keyword">if</span> rate == 1/2
+0360                     baseH = H_1944_1_2;
+0361                 <span class="keyword">elseif</span> rate == 2/3
+0362                     baseH = H_1944_2_3;
+0363                 <span class="keyword">elseif</span> rate == 3/4
+0364                     baseH = H_1944_3_4;
+0365                 <span class="keyword">elseif</span> rate == 5/6
+0366                     baseH = H_1944_5_6;
+0367                 <span class="keyword">else</span>
+0368                     disp(<span class="string">'Not supported rate value'</span>);
+0369                     <span class="keyword">return</span>;
+0370                 <span class="keyword">end</span>
+0371             <span class="keyword">else</span>
+0372                 disp(<span class="string">'Not supported block length value'</span>);
+0373                 <span class="keyword">return</span>;
+0374             <span class="keyword">end</span>
+0375             
+0376             obj.lifted_ldpc(baseH, obj.Z);
+0377             
+0378         <span class="keyword">end</span>
+0379         
+0380     <span class="keyword">end</span>
+0381     
+0382 <span class="keyword">end</span>
+0383</pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

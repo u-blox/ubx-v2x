@@ -1,8 +1,8 @@
 %CODEGEN_SCRIPT - Generates MEX files for acceleration purposes
 %
-%   Author: Ioannis Sarris, u-blox
-%   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 19-February-2019
+%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+%   contact email: ioannis.sarris@u-blox.com
+%   August 2018; Last revision: 04-December-2020
 
 % Copyright (C) u-blox
 %
@@ -23,13 +23,20 @@
 % Purpose: V2X baseband simulation model
 
 addpath('./functions')
+clc
+
+if isempty('TX')
+    error('First run batch_sim.m to create parameter structures')
+end
 
 tic
 disp('Creating MEX for sim_tx')
-codegen -args {0, 0, true, 0} sim_tx -o ./mex/sim_tx_mex -config:mex -report
+codegen -args {TX} sim_tx -o ./mex/sim_tx_mex -config:mex -report
 toc
 
 tic
 disp('Creating MEX for sim_rx')
-codegen -args {PHY, coder.typeof(1j, [inf 1], [1 0]), 0, coder.typeof(1j, [64 1400], [0 1]), 0, 0} sim_rx -o ./mex/sim_rx_mex -config:mex -report
+codegen -args {coder.typeof(1j,[inf 4], [1 1]), coder.typeof(1j, [128 1400], [1 1]), RX, TX, 0} ... 
+            sim_rx -o ./mex/sim_rx_mex -config:mex -report
 toc
+

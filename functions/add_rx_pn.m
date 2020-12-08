@@ -1,9 +1,9 @@
 function out = add_rx_pn(in, enabled)
 %ADD_RX_PN Apply phase noise at the receiver
 %
-%   Author: Ioannis Sarris, u-blox
-%   email: ioannis.sarris@u-blox.com
-%   February 2019; Last revision: 19-February-2019
+%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+%   contact email: ioannis.sarris@u-blox.com
+%   August 2018; Last revision: 04-December-2020
 
 % Copyright (C) u-blox
 %
@@ -59,4 +59,6 @@ if enabled
     
     % Apply phase noise to input waveform
     out = pn_obj(in);
+end
+
 end

@@ -1,9 +1,9 @@
 function [out, filt_len] = upsample_tx(in, ovs)
 %UPSAMPLE_TX Oversample transmitted signal by an integer factor
 %
-%   Author: Ioannis Sarris, u-blox
-%   email: ioannis.sarris@u-blox.com
-%   February 2019; Last revision: 11-February-2019
+%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+%   contact email: ioannis.sarris@u-blox.com
+%   August 2018; Last revision: 04-December-2020
 
 % Copyright (C) u-blox
 %
@@ -26,7 +26,7 @@ function [out, filt_len] = upsample_tx(in, ovs)
 % Apply oversampling if factor > 1
 if (ovs > 1)
     % Filter length and attenuation factor for Chebyshev window (dB)
-    filt_len = 128; 
+    filt_len = 128;
     r = 50;
     
     % Generate filter coefficients

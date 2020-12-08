@@ -1,9 +1,9 @@
-function [SIG_CFG, r_cfo] = sig_rx(r, h_est, data_idx, pilot_idx)
+function [SIG_CFG] = sig_rx(x_d, snr)
 %SIG_RX SIG message receiver/deparser
 %
-%   Author: Ioannis Sarris, u-blox
-%   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 30-August-2018
+%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+%   contact email: ioannis.sarris@u-blox.com
+%   August 2018; Last revision: 04-December-2020
 
 % Copyright (C) u-blox
 %
@@ -36,7 +36,9 @@ SIG_CFG = struct(...
     'n_bpscs', 0, ...
     'n_cbps', 0, ...
     'n_dbps', 0, ...
-    'n_sym', 0);
+    'n_sym', 0, ...
+    'ppdu_fmt', 0, ...
+    'n_sd', 0);
 
 % Create system object
 if isempty(vit_obj)
@@ -47,30 +49,11 @@ if isempty(vit_obj)
         'TerminationMethod', 'Terminated');
 end
 
-% Perform FFT & normalization
-y = complex(zeros(64, 1));
-y(:) = dot11_fft(r([9:64 1:8], 1), 64)*sqrt(52)/64;
-
-% Frequency-domain smoothing
-h_est = fd_smooth(h_est);
-
-% Pilot equalization
-x_p = y(pilot_idx, 1)./h_est(pilot_idx, 1).*[1 1 1 -1].';
-
-% Residual CFO estimation
-r_cfo = mean(angle(x_p));
-   
-% Data equalization with CFO compensation
-x_d = y(data_idx, 1)./h_est(data_idx, 1)*exp(-1j*r_cfo);
-
-% SNR input to Viterbi
-snr = abs(h_est(data_idx, 1));
-	
 % LLR demapping
 llr_in = llr_demap(x_d.', 1, snr);
 
 % Deinterleaving
-x_data = deinterleaver(llr_in, 1, 48);
+x_data = deinterleaver(llr_in, 1, 48, 1, 0);
 
 % Viterbi decoding
 sig_msg = step(vit_obj, x_data.');
@@ -120,22 +103,5 @@ if (parity_bit == parity_check)
 else
     return
 end
-
-% MCS table
-r_num_vec   = [1 3 1 3 1 3 2 3];
-r_denom_vec = [2 4 2 4 2 4 3 4];
-n_bpscs_vec = [1 1 2 2 4 4 6 6];
-
-% Find code rate numerator/denominator & bits per modulation symbol
-SIG_CFG.r_num = r_num_vec(SIG_CFG.mcs + 1);
-SIG_CFG.r_denom = r_denom_vec(SIG_CFG.mcs + 1);
-SIG_CFG.n_bpscs = n_bpscs_vec(SIG_CFG.mcs + 1);
-
-% Calculate coded/uncoded number of bits per OFDM symbol
-SIG_CFG.n_cbps = 48*SIG_CFG.n_bpscs;
-SIG_CFG.n_dbps = SIG_CFG.n_cbps*SIG_CFG.r_num/SIG_CFG.r_denom;
-
-% Number of OFDM symbols
-SIG_CFG.n_sym = ceil((16 + 8*SIG_CFG.length + 6)/SIG_CFG.n_dbps);
 
 end

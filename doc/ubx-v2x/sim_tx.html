@@ -1,0 +1,159 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of sim_tx</title>
+  <meta name="keywords" content="sim_tx">
+  <meta name="description" content="SIM_TX High-level transmitter function">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; sim_tx.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>sim_tx
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>SIM_TX High-level transmitter function</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(TX) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">SIM_TX High-level transmitter function
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="apply_time_window.html" class="code" title="function out = apply_time_window(in, enabled)">apply_time_window</a>	APPLY_TIME_WINDOW Apply time-domain window to improve spectral shape</li><li><a href="data_tx.html" class="code" title="function [data_wf, data_f_mtx] = data_tx(PHY, pad_len, padding_out, w_beta)">data_tx</a>	DATA_TX Transmitter processing of all DATA OFDM symbols</li><li><a href="ltf_tx.html" class="code" title="function ltf_wf = ltf_tx(w_beta, n_chan)">ltf_tx</a>	LTF_TX Generates LTF preamble</li><li><a href="ngv_ltf_tx.html" class="code" title="function ngv_ltf_wf = ngv_ltf_tx(w_beta, n_chan, n_ss, ltf_fmt)">ngv_ltf_tx</a>	NGV_LTF_TX Generates NGV-LTF preamble</li><li><a href="ngv_sig_tx.html" class="code" title="function ngv_sig_wf = ngv_sig_tx(PHY, w_beta, n_chan)">ngv_sig_tx</a>	NGV_SIG_TX NGV_SIG message transmitter/parser</li><li><a href="ngv_stf_tx.html" class="code" title="function ngv_stf_wf = ngv_stf_tx(w_beta, n_chan)">ngv_stf_tx</a>	NGV_STF_TX Generates NGV-STF preamble</li><li><a href="sig_tx.html" class="code" title="function sig_wf = sig_tx(PHY, TX, n_chan)">sig_tx</a>	SIG_TX SIG message transmitter/parser</li><li><a href="stf_tx.html" class="code" title="function stf_wf = stf_tx(w_beta, n_chan)">stf_tx</a>	STF_TX Generates STF preamble</li><li><a href="tx_phy_params.html" class="code" title="function [PHY, data_msg] = tx_phy_params(mode, mcs, tx_payload_len, ppdu_fmt, mid, n_ss, ngvltf_fmt, n_chan, rx_lsig_len, rx_ngvsig_extra_sym)">tx_phy_params</a>	TX_PHY_PARAMS Initializes PHY layer parameters</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="batch_sim.html" class="code" title="">batch_sim</a>	BATCH_SIM - Batch simulation script</li><li><a href="codegen_script.html" class="code" title="">codegen_script</a>	CODEGEN_SCRIPT - Generates MEX files for acceleration purposes</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(TX)</a>
+0002 <span class="comment">%SIM_TX High-level transmitter function</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">% Create structure with PHY parameters</span>
+0027 [PHY, data_msg] = <a href="tx_phy_params.html" class="code" title="function [PHY, data_msg] = tx_phy_params(mode, mcs, tx_payload_len, ppdu_fmt, mid, n_ss, ngvltf_fmt, n_chan, rx_lsig_len, rx_ngvsig_extra_sym)">tx_phy_params</a>(<span class="string">'TX'</span>, TX.mcs, TX.payload_len, TX.ppdu_fmt, TX.mid, TX.n_ss, TX.ltf_fmt_init, TX.n_chan, 0, 0);
+0028 
+0029 <span class="comment">% Get L-STF waveform</span>
+0030 stf_wf = <a href="stf_tx.html" class="code" title="function stf_wf = stf_tx(w_beta, n_chan)">stf_tx</a>(TX.w_beta, PHY.n_chan);
+0031 
+0032 <span class="comment">% Get L-LTF waveform</span>
+0033 ltf_wf = <a href="ltf_tx.html" class="code" title="function ltf_wf = ltf_tx(w_beta, n_chan)">ltf_tx</a>(TX.w_beta, PHY.n_chan);
+0034 
+0035 <span class="comment">% Get L-SIG waveform</span>
+0036 sig_wf = <a href="sig_tx.html" class="code" title="function sig_wf = sig_tx(PHY, TX, n_chan)">sig_tx</a>(PHY, TX, PHY.n_chan);
+0037 
+0038 <span class="comment">% NGV preamble symbols</span>
+0039 <span class="keyword">if</span> (TX.ppdu_fmt == 1)
+0040     <span class="comment">% Calculate number of required pad bits</span>
+0041     pad_len = PHY.n_sym*PHY.n_dbps - (16 + 8*PHY.psdu_length + 6);
+0042     
+0043     <span class="comment">% Add service and zero-padding (pad + tail)</span>
+0044     padding_out = [false(16, 1); data_msg; false(pad_len + 6, 1)];
+0045     
+0046     ngv_sig_wf = [];
+0047     ngv_stf_wf = [];
+0048     ngv_ltf_wf = [];
+0049     
+0050 <span class="keyword">elseif</span> (TX.ppdu_fmt == 2)
+0051     <span class="keyword">if</span> (TX.mcs == 0 || TX.mcs == 10)
+0052         <span class="comment">% BPSK or BPSK-DCM. Apply power scaling for L-STF and L-LTF</span>
+0053         stf_wf = sqrt(2)*stf_wf;
+0054         ltf_wf = sqrt(2)*ltf_wf;
+0055     <span class="keyword">end</span>
+0056     <span class="comment">% NGV-SIG</span>
+0057     ngv_sig_wf = <a href="ngv_sig_tx.html" class="code" title="function ngv_sig_wf = ngv_sig_tx(PHY, w_beta, n_chan)">ngv_sig_tx</a>(PHY, TX.w_beta, PHY.n_chan);
+0058     
+0059     <span class="comment">% NGV-STF</span>
+0060     ngv_stf_wf = <a href="ngv_stf_tx.html" class="code" title="function ngv_stf_wf = ngv_stf_tx(w_beta, n_chan)">ngv_stf_tx</a>(TX.w_beta, PHY.n_chan);
+0061     
+0062     <span class="comment">% NGV-LTF</span>
+0063     ngv_ltf_wf = <a href="ngv_ltf_tx.html" class="code" title="function ngv_ltf_wf = ngv_ltf_tx(w_beta, n_chan, n_ss, ltf_fmt)">ngv_ltf_tx</a>(TX.w_beta, PHY.n_chan, TX.n_ss, PHY.ngvltf_fmt);
+0064     
+0065     <span class="comment">% MAC and PHY padding for LDPC</span>
+0066     Npld = PHY.LDPC.Npld;
+0067     pad_len = Npld - (TX.payload_len+4)*8 - 16; <span class="comment">% Total length of MAC + PHY padding (bits)</span>
+0068      
+0069     <span class="comment">% Add service and zero-padding</span>
+0070     padding_out = [false(16, 1); data_msg;  false(pad_len, 1)];
+0071 <span class="keyword">else</span>
+0072     error(<span class="string">'PPDU format not supported'</span>)
+0073 <span class="keyword">end</span>
+0074 
+0075 <span class="comment">% Generate data waveform</span>
+0076 [data_wf, data_f_mtx] = <a href="data_tx.html" class="code" title="function [data_wf, data_f_mtx] = data_tx(PHY, pad_len, padding_out, w_beta)">data_tx</a>(PHY, pad_len, padding_out, TX.w_beta);
+0077 
+0078 <span class="comment">% Concatenate output waveform</span>
+0079 <span class="keyword">if</span> (TX.ppdu_fmt == 1)
+0080     cyc_shift_leg = [0 2]*PHY.n_chan; <span class="comment">% 200 nanoseconds</span>
+0081     tx_wf1 = [stf_wf; ltf_wf; sig_wf; data_wf];
+0082     tx_wf = complex(zeros(size(tx_wf1,1), TX.n_tx_ant));
+0083     <span class="keyword">for</span> i_tx = 1:TX.n_tx_ant
+0084         cyc_l = cyc_shift_leg(i_tx);
+0085         <span class="comment">%tx_wf(:,i_tx) = [stf_wf; ltf_wf; sig_wf; sig_wf; ngv_sig_wf; ngv_sig_wf; ngv_stf_wf; ngv_ltf_wf; data_wf];</span>
+0086         tx_wf(:,i_tx) = [circshift(stf_wf, cyc_l); circshift(ltf_wf, cyc_l); circshift(sig_wf, cyc_l); circshift(data_wf, cyc_l)];
+0087     <span class="keyword">end</span>
+0088 <span class="keyword">else</span>
+0089     cyc_shift_leg = [0 2]*PHY.n_chan; <span class="comment">% 200 nanoseconds</span>
+0090     cyc_shift_ngv = [0 4]*PHY.n_chan; <span class="comment">% is still TBD</span>
+0091     tx_wf1 = [stf_wf; ltf_wf; sig_wf; sig_wf; ngv_sig_wf; ngv_sig_wf; ngv_stf_wf; ngv_ltf_wf; data_wf];
+0092     tx_wf = complex(zeros(size(tx_wf1,1), TX.n_tx_ant));
+0093     <span class="keyword">for</span> i_tx = 1:TX.n_tx_ant
+0094         cyc_l = cyc_shift_leg(i_tx);
+0095         cyc_n = cyc_shift_ngv(i_tx);
+0096         tx_wf(:,i_tx) = [circshift(stf_wf(:,1), cyc_l); circshift(ltf_wf(:,1), cyc_l); circshift(sig_wf(:,1), cyc_l); circshift(sig_wf(:,1), cyc_l); circshift(ngv_sig_wf(:,1), cyc_l); circshift(ngv_sig_wf(:,1), cyc_l); circshift(ngv_stf_wf(:,1), cyc_n); circshift(ngv_ltf_wf(:,1), cyc_n); circshift(data_wf(:,1), cyc_n)];
+0097     <span class="keyword">end</span>
+0098 <span class="keyword">end</span>
+0099 
+0100 <span class="comment">% Apply time-domain windowing</span>
+0101 <span class="keyword">if</span> (TX.window_en)
+0102     <span class="keyword">if</span> (PHY.ngvltf_fmt ~= 0 || TX.bw_mhz ~= 10)
+0103         error(<span class="string">'TX time-domain windowing is not supported in this mode'</span>)
+0104     <span class="keyword">end</span>
+0105     tx_wf = <a href="apply_time_window.html" class="code" title="function out = apply_time_window(in, enabled)">apply_time_window</a>(tx_wf, TX.window_en);
+0106 <span class="keyword">end</span>
+0107 
+0108 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of ngv_chan_est</title>
+  <meta name="keywords" content="ngv_chan_est">
+  <meta name="description" content="NGV_CHAN_EST Channel estimation algorithm, using NGV-LTF preamble">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; ngv_chan_est.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>ngv_chan_est
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>NGV_CHAN_EST Channel estimation algorithm, using NGV-LTF preamble</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function h_est = ngv_chan_est(r, ofdm_off, n_ss, n_chan, n_nltf_samples) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">NGV_CHAN_EST Channel estimation algorithm, using NGV-LTF preamble
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="dot11_fft.html" class="code" title="function out = dot11_fft(in, n_fft)">dot11_fft</a>	DOT11_FFT 802.11 FFT</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="data_rx.html" class="code" title="function [descr_msg] = data_rx(PHY, RX, rx_wf, idx0, h_est, data_f_mtx, r_cfo, snr_avg)">data_rx</a>	DATA_RX Receiver processing of all DATA OFDM symbols</li><li><a href="sim_rx.html" class="code" title="function [err] = sim_rx(rx_wf, data_f_mtx, RX, TX, s0_len)">sim_rx</a>	SIM_RX High-level receiver function</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function h_est = ngv_chan_est(r, ofdm_off, n_ss, n_chan, n_nltf_samples)</a>
+0002 <span class="comment">%NGV_CHAN_EST Channel estimation algorithm, using NGV-LTF preamble</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">% NGV-LTF f-domain representation</span>
+0027 ltf_left = [1 1 -1 -1 1 1 -1 1 -1 1 1 1 1 1 1 -1 -1 1 1 -1 1 -1 1 1 1 1].';
+0028 ltf_right = [1 -1 -1 1 1 -1 1 -1 1 -1 -1 -1 -1 -1 1 1 -1 -1 1  -1 1 -1 1 1 1 1].';
+0029 
+0030 <span class="keyword">if</span> (n_chan == 1)
+0031     n_fft = 64;
+0032     n_st = 56;
+0033     ngv_ltf_f = [zeros(4,1); 1; 1; ltf_left; 0; ltf_right; -1; -1; zeros(3,1);];
+0034 <span class="keyword">else</span>
+0035     n_fft = 128;
+0036     n_st = 114;
+0037     ngv_ltf_f = complex([zeros(6,1); ltf_left; 1; ltf_right; -1; -1; -1; 1; zeros(3,1); -1; 1; 1; -1; ltf_left; 1; ltf_right; zeros(5,1)]);
+0038     
+0039     <span class="comment">% Apply tone rotation for 20 MHz waveform: subcarriers k&gt;=0 are multiplied by j</span>
+0040     ngv_ltf_f(65:128) = ngv_ltf_f(65:128) * 1j;
+0041 <span class="keyword">end</span>
+0042 
+0043 <span class="comment">% Number of receive chains</span>
+0044 n_rx = size(r,2);
+0045 h_est = complex(zeros(64*n_chan, size(r,2)));
+0046 <span class="keyword">for</span> i_rx = 1:n_rx
+0047     <span class="keyword">if</span> (n_nltf_samples == 48*n_chan)
+0048         <span class="comment">% Compressed NGV-LTF-1x. Repeat the received waveform twice</span>
+0049         y = <a href="dot11_fft.html" class="code" title="function out = dot11_fft(in, n_fft)">dot11_fft</a>([r([ofdm_off+1:n_fft/2 1:ofdm_off], i_rx); r([ofdm_off+1:n_fft/2 1:ofdm_off], i_rx)], n_fft)*sqrt(n_st)/n_fft;
+0050         <span class="comment">% Least-Squares channel estimation for the even-numbered subcarriers</span>
+0051         h_est(:,i_rx) = y./ngv_ltf_f;
+0052         <span class="keyword">if</span> (n_chan == 1)
+0053             h_est(33,i_rx) = (h_est(31,i_rx) + h_est(35,i_rx))/2;
+0054         <span class="keyword">else</span>
+0055             h_est(65,i_rx) = (h_est(63,i_rx) + h_est(67,i_rx))/2;
+0056         <span class="keyword">end</span>
+0057         <span class="comment">% Interpolate the channel estimates for the missing odd-numbered subcarriers</span>
+0058         h_est(isnan(h_est) | isinf(h_est)) = 0;
+0059         h_est(:,i_rx) = interp1(1:2:n_fft, h_est(1:2:n_fft, i_rx), 1:n_fft, <span class="string">'pchip'</span>);
+0060         
+0061         <span class="comment">% Set the channel estimates for unused subcarriers to zero</span>
+0062         h_est(ngv_ltf_f==0, i_rx) = 0;
+0063     <span class="keyword">else</span>
+0064         <span class="comment">% Default NGV-LTF-2x format or NGV-LTF-repeat format</span>
+0065         <span class="keyword">if</span> (n_nltf_samples == 144*n_chan)
+0066             <span class="comment">%try simple time-domain combining</span>
+0067             r(1:n_fft,i_rx) = r(1:n_fft,i_rx) + r(n_fft+1:2*n_fft,i_rx);
+0068         <span class="keyword">end</span>
+0069         
+0070         <span class="comment">% FFT on the time-domain sequence</span>
+0071         y = <a href="dot11_fft.html" class="code" title="function out = dot11_fft(in, n_fft)">dot11_fft</a>(r([ofdm_off+1:n_fft 1:ofdm_off], i_rx), n_fft)*sqrt(n_st)/n_fft;
+0072         <span class="comment">% Least-Squares channel estimation</span>
+0073         h_est(:, i_rx) = y./ngv_ltf_f;
+0074     <span class="keyword">end</span>
+0075 <span class="keyword">end</span>
+0076 
+0077 
+0078 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of ngv_sig_rx</title>
+  <meta name="keywords" content="ngv_sig_rx">
+  <meta name="description" content="NGV_SIG_RX NGV-SIG message receiver">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; ngv_sig_rx.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>ngv_sig_rx
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>NGV_SIG_RX NGV-SIG message receiver</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [NGV_SIG_CFG] = ngv_sig_rx(x_d_cfo, snr) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">NGV_SIG_RX NGV-SIG message receiver
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="crc8.html" class="code" title="function out = crc8(in_bits)">crc8</a>	CRC8 Computes CRC8 on an input bitstream</li><li><a href="deinterleaver.html" class="code" title="function out = deinterleaver(in, n_bpscs, n_cbps, ppdu_fmt, n_chan)">deinterleaver</a>	DEINTERLEAVER Bit deinterleaver</li><li><a href="llr_demap.html" class="code" title="function llr_out = llr_demap(sym_in, q, snr_vec)">llr_demap</a>	LLR_DEMAP LLR demapping</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="sim_rx.html" class="code" title="function [err] = sim_rx(rx_wf, data_f_mtx, RX, TX, s0_len)">sim_rx</a>	SIM_RX High-level receiver function</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [NGV_SIG_CFG] = ngv_sig_rx(x_d_cfo, snr)</a>
+0002 <span class="comment">%NGV_SIG_RX NGV-SIG message receiver</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">% Store this as a persistent variable to avoid reinitialization</span>
+0027 <span class="keyword">persistent</span> vit_obj
+0028 
+0029 <span class="comment">% Create system object</span>
+0030 <span class="keyword">if</span> isempty(vit_obj)
+0031     vit_obj = comm.ViterbiDecoder(<span class="keyword">...</span>
+0032         <span class="string">'TrellisStructure'</span>, poly2trellis(7, [133 171]), <span class="keyword">...</span>
+0033         <span class="string">'InputFormat'</span>, <span class="string">'Unquantized'</span>, <span class="keyword">...</span>
+0034         <span class="string">'TracebackDepth'</span>, 24, <span class="keyword">...</span>
+0035         <span class="string">'TerminationMethod'</span>, <span class="string">'Terminated'</span>);
+0036 <span class="keyword">end</span>
+0037 
+0038 <span class="comment">% LLR demapping</span>
+0039 llr_in = <a href="llr_demap.html" class="code" title="function llr_out = llr_demap(sym_in, q, snr_vec)">llr_demap</a>(x_d_cfo.', 1, snr);
+0040 
+0041 <span class="comment">% Deinterleaving</span>
+0042 x_data = <a href="deinterleaver.html" class="code" title="function out = deinterleaver(in, n_bpscs, n_cbps, ppdu_fmt, n_chan)">deinterleaver</a>(llr_in, 1, 48, 1, 0);
+0043 
+0044 <span class="comment">% Viterbi decoding</span>
+0045 sig_msg = step(vit_obj, x_data.');
+0046 
+0047 <span class="comment">% Extract parameters from NGV-SIG</span>
+0048 NGV_SIG_CFG.ver     = bi2de(sig_msg(1:2)');
+0049 NGV_SIG_CFG.n_chan  = bi2de(sig_msg(3)) + 1;
+0050 NGV_SIG_CFG.mcs     = bi2de(sig_msg(4:7)');
+0051 NGV_SIG_CFG.n_ss    = bi2de(sig_msg(8)) + 1; <span class="comment">% Number of spatial streams</span>
+0052 NGV_SIG_CFG.mid     = 2^(2 + bi2de(sig_msg(9:10)')); <span class="comment">% SFD: Set 0 for 4 symbols, set 1 for 8 symbols, set 2 for 16 symbol. Value 3 is reserved.</span>
+0053 NGV_SIG_CFG.b_ltf   = sig_msg(11);
+0054 NGV_SIG_CFG.extra   = sig_msg(12);
+0055 NGV_SIG_CFG.res     = bi2de(sig_msg(13:14)');
+0056 NGV_SIG_CFG.crc     = bi2de(sig_msg(15:18)');
+0057 
+0058 <span class="comment">% Declare non-erroneous SIG after valid MCS detection</span>
+0059 NGV_SIG_CFG.sig_err = false;
+0060 
+0061 <span class="comment">% Perform CRC check</span>
+0062 b_crc8 = de2bi(<a href="crc8.html" class="code" title="function out = crc8(in_bits)">crc8</a>(sig_msg(1:14)),8,<span class="string">'left-msb'</span>)';
+0063 crc_error = (bi2de(b_crc8(1:4)') ~= NGV_SIG_CFG.crc);
+0064 
+0065 <span class="comment">% Validity checks for NGV_SIG</span>
+0066 check0 = (NGV_SIG_CFG.mcs &gt; 10);
+0067 check1 = (crc_error == true);
+0068 check2 = (NGV_SIG_CFG.mid == 32); <span class="comment">% value '11' in the mid field (resulting in mid==32) is reserved.</span>
+0069 check3 = (NGV_SIG_CFG.mcs == 9 &amp;&amp; NGV_SIG_CFG.n_chan == 1); <span class="comment">% MCS 9 is only supported in 20 MHz mode</span>
+0070 check4 = (NGV_SIG_CFG.ver ~= 0);
+0071 check5 = (NGV_SIG_CFG.res ~= 3);
+0072 
+0073 <span class="keyword">if</span> (check0 || check1 || check2 || check3 || check4 || check5)
+0074     NGV_SIG_CFG.sig_err = true;
+0075     <span class="keyword">return</span>
+0076 <span class="keyword">end</span>
+0077 
+0078 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

@@ -1,0 +1,256 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of data_rx</title>
+  <meta name="keywords" content="data_rx">
+  <meta name="description" content="DATA_RX Receiver processing of all DATA OFDM symbols">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; data_rx.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>data_rx
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>DATA_RX Receiver processing of all DATA OFDM symbols</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [descr_msg] = data_rx(PHY, RX, rx_wf, idx0, h_est, data_f_mtx, r_cfo, snr_avg) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">DATA_RX Receiver processing of all DATA OFDM symbols
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="bcc_dec.html" class="code" title="function bits_out = bcc_dec(llr_in, r_num, bcc_init)">bcc_dec</a>	BCC_DEC Decodes BCC encoded LLR stream</li><li><a href="deinterleaver.html" class="code" title="function out = deinterleaver(in, n_bpscs, n_cbps, ppdu_fmt, n_chan)">deinterleaver</a>	DEINTERLEAVER Bit deinterleaver</li><li><a href="descrambler_rx.html" class="code" title="function out = descrambler_rx(d_in)">descrambler_rx</a>	DESCRAMBLER Bit descrambler</li><li><a href="dot11_fft.html" class="code" title="function out = dot11_fft(in, n_fft)">dot11_fft</a>	DOT11_FFT 802.11 FFT</li><li><a href="fd_smooth.html" class="code" title="function h_out = fd_smooth(h_in, n_sd)">fd_smooth</a>	FD_SMOOTH Frequency-domain smoothing</li><li><a href="ldpc_dec.html" class="code" title="function unc_bits = ldpc_dec(LDPC, llr_in, ldpc_cfg)">ldpc_dec</a>	LDPC_DEC Decodes an LLR stream with LDPC decoding</li><li><a href="llr_demap.html" class="code" title="function llr_out = llr_demap(sym_in, q, snr_vec)">llr_demap</a>	LLR_DEMAP LLR demapping</li><li><a href="ngv_chan_est.html" class="code" title="function h_est = ngv_chan_est(r, ofdm_off, n_ss, n_chan, n_nltf_samples)">ngv_chan_est</a>	NGV_CHAN_EST Channel estimation algorithm, using NGV-LTF preamble</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="sim_rx.html" class="code" title="function [err] = sim_rx(rx_wf, data_f_mtx, RX, TX, s0_len)">sim_rx</a>	SIM_RX High-level receiver function</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [descr_msg] = data_rx(PHY, RX, rx_wf, idx0, h_est, data_f_mtx, r_cfo, snr_avg)</a>
+0002 <span class="comment">%DATA_RX Receiver processing of all DATA OFDM symbols</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">% Needed for code generation</span>
+0027 coder.varsize(<span class="string">'sym_out'</span>, [108 1], [1 0]);
+0028 
+0029 <span class="comment">% Size of the FFT</span>
+0030 n_fft = PHY.n_chan*64;
+0031 
+0032 <span class="comment">% Number of samples in the cyclic prefix (CP)</span>
+0033 cp_len = PHY.n_chan*16;
+0034 
+0035 <span class="comment">% Discard ofdm_off symbols from the end and replace them with the last ofdm_off symbols from the CP</span>
+0036 ofdm_off = cp_len/2;
+0037 
+0038 <span class="comment">% idx0 points to the first sample of the CP</span>
+0039 <span class="comment">% idx points to the first sample that is used as input to the FFT</span>
+0040 idx = idx0 + cp_len - ofdm_off;
+0041 
+0042 <span class="comment">% Number of receive antennas</span>
+0043 n_rx = size(rx_wf, 2);
+0044 
+0045 <span class="comment">% Number of time-domain samples per OFDM symbol</span>
+0046 n_sps = n_fft + cp_len;
+0047 
+0048 <span class="comment">% Calculate latency of (fake) channel tracking feedback</span>
+0049 h_delay = ceil(96/PHY.n_dbps) + 1;
+0050 
+0051 <span class="comment">% Initialize matrix holding channel estimates for all OFDM symbols</span>
+0052 h_est_mtx = complex(zeros(n_fft, PHY.n_sym + h_delay));
+0053 
+0054 <span class="comment">% Initialization based on PPDU format</span>
+0055 <span class="keyword">if</span> (PHY.ppdu_fmt == 1)
+0056     <span class="comment">% Midambles are disabled, fill initial buffer with channel estimate from LTF</span>
+0057     i_mid = 0;
+0058     h_est_mtx(:, 1:h_delay*n_rx) = repmat(h_est, [1 h_delay]);
+0059     sym_since_est = h_delay; <span class="comment">% TODO: This will be used for CFO correction, verify this!</span>
+0060 <span class="keyword">else</span>
+0061     <span class="comment">% Initialize buffer with channel estimate from NGV-LTF</span>
+0062     i_mid = 1;
+0063     h_est_mtx(:, 1:n_rx + n_rx*(i_mid-1)) = h_est;
+0064     sym_since_est = 0;
+0065 <span class="keyword">end</span>
+0066 
+0067 <span class="comment">% Loop for all OFDM symbols</span>
+0068 data_bcc_vec = zeros(PHY.n_dbps, PHY.n_sym);
+0069 data_ldpc_vec = zeros(PHY.n_cbps, PHY.n_sym);
+0070 evm_mtx = zeros(PHY.n_sd, PHY.n_sym);
+0071 
+0072 <span class="comment">% Total samples for NGV-LTF</span>
+0073 n_ngvltf_tot = PHY.n_ss * PHY.n_ngvltf_samp;
+0074 
+0075 <span class="comment">% Loop for all OFDM symbols</span>
+0076 <span class="keyword">for</span> i_sym = 1:PHY.n_sym
+0077     <span class="comment">% Track the number of symbols since the last channel estimate</span>
+0078     sym_since_est = sym_since_est + 1;
+0079     
+0080     <span class="comment">% Check if midambles are enabled</span>
+0081     <span class="keyword">if</span> ((PHY.mid &gt; 0) &amp;&amp; (i_sym &gt; 1))
+0082         
+0083         <span class="comment">% If this is a midamble symbol, perform channel estimation</span>
+0084         <span class="keyword">if</span> (mod(i_sym, PHY.mid) == 1)
+0085             <span class="comment">% Increase counter of midamble symbols</span>
+0086             i_mid = i_mid + 1;
+0087             
+0088             <span class="comment">% Reset the number of symbols since the last channel estimate</span>
+0089             sym_since_est = 1;
+0090             
+0091             <span class="comment">% Channel estimation</span>
+0092             wf_in = rx_wf(idx:idx + n_ngvltf_tot - cp_len - 1,:);
+0093             h_est = <a href="ngv_chan_est.html" class="code" title="function h_est = ngv_chan_est(r, ofdm_off, n_ss, n_chan, n_nltf_samples)">ngv_chan_est</a>(wf_in, ofdm_off, PHY.n_ss, PHY.n_chan, PHY.n_ngvltf_samp);
+0094             
+0095             <span class="comment">% Store channel estimate in a matrix</span>
+0096             h_est_mtx(:, (1:n_rx) + n_rx*(i_mid-1)) = h_est;
+0097             
+0098             <span class="comment">% Go to next OFDM symbol for data processing</span>
+0099             idx = idx + n_ngvltf_tot;
+0100         <span class="keyword">end</span>
+0101     <span class="keyword">end</span>
+0102     
+0103     <span class="comment">% Get waveform for current OFDM symbol</span>
+0104     wf_in = rx_wf(idx:idx + n_fft - 1, :);
+0105     idx = idx + n_sps;
+0106     
+0107     <span class="comment">% Find polarity sign for pilot subcarriers</span>
+0108     pol_sign = PHY.polarity_sign(mod(i_sym - 1 + PHY.pilot_offset, 127) + 1);
+0109     
+0110     <span class="comment">% Perform FFT and MRC combinining</span>
+0111     y = complex(zeros(n_fft, n_rx));
+0112     mrc_num = complex(zeros(PHY.n_sd,1));
+0113     mrc_denom = complex(zeros(PHY.n_sd,1));
+0114     
+0115     <span class="comment">% Loop for received antennas</span>
+0116     <span class="keyword">for</span> i_rx = 1:n_rx
+0117         
+0118         <span class="comment">% Perform FFT</span>
+0119         y(:, i_rx) = <a href="dot11_fft.html" class="code" title="function out = dot11_fft(in, n_fft)">dot11_fft</a>(wf_in([ofdm_off + 1:n_fft 1:ofdm_off], i_rx), n_fft)*sqrt(PHY.n_st)/n_fft;
+0120         
+0121         <span class="comment">% If midamble is disabled, find (genie) channel estimate from received &amp; transmitted waveforms</span>
+0122         <span class="comment">% In real systems this comes from Data-Aided-Channel-Estimation processing</span>
+0123         <span class="keyword">if</span> (PHY.mid == 0 &amp;&amp; PHY.ppdu_fmt == 1)
+0124             
+0125             <span class="comment">% Store current genie channel estimate for future use</span>
+0126             h_est_idx = i_rx + n_rx*(i_sym + h_delay - 1);
+0127             h_est_mtx(:, h_est_idx) = y(:,i_rx)./data_f_mtx(:, i_sym);
+0128             
+0129             <span class="comment">% Index of the most recent channel estimate that can be used (current symbol index minus decoding delay)</span>
+0130             curr_sym_idx = i_rx + n_rx*(i_sym - 1);
+0131             
+0132             <span class="comment">% Index of the t_depth-th channel estimate before curr_sym_idx</span>
+0133             sym_idx0 = i_rx + n_rx*(max(1, i_sym - (RX.t_depth - 1)) - 1);
+0134             
+0135             <span class="comment">% Time-average over the t_depth channel estimates</span>
+0136             h_est(:,i_rx) = mean(h_est_mtx(:, sym_idx0:n_rx:curr_sym_idx), 2);
+0137         <span class="keyword">else</span>
+0138             <span class="comment">% Get raw, unsmoothed estimate from most recent LTF or midamble</span>
+0139             h_est = h_est_mtx(:, (1:n_rx) + n_rx*(i_mid-1));
+0140         <span class="keyword">end</span>
+0141         
+0142         <span class="comment">% Frequency-domain smoothing</span>
+0143         h_est = <a href="fd_smooth.html" class="code" title="function h_out = fd_smooth(h_in, n_sd)">fd_smooth</a>(h_est, PHY.n_sd);
+0144         
+0145         <span class="comment">% Pilot values</span>
+0146         <span class="keyword">if</span> (PHY.ppdu_fmt == 1)
+0147             pilot_val = PHY.pilot_val;
+0148         <span class="keyword">else</span>
+0149             <span class="comment">% NGV pilot values are shifted by 1 for every symbol</span>
+0150             pilot_val = circshift(PHY.pilot_val, - (i_sym-1));
+0151         <span class="keyword">end</span>
+0152         
+0153         <span class="comment">% Pilot CFO correction and equalization</span>
+0154         x_p = pol_sign*y(PHY.pilot_idx, i_rx)./h_est(PHY.pilot_idx, i_rx).*pilot_val*exp(-1j*r_cfo);
+0155         
+0156         <span class="comment">% Residual CFO estimation</span>
+0157         r_cfo = (r_cfo + mean(angle(x_p)))/2;
+0158         
+0159         <span class="comment">% MRC combining</span>
+0160         mrc_num = mrc_num + conj(h_est(PHY.data_idx, i_rx)).*y(PHY.data_idx, i_rx)*exp(-1j*r_cfo);
+0161         mrc_denom = mrc_denom + abs(h_est(PHY.data_idx, i_rx)).^2;
+0162     <span class="keyword">end</span>
+0163     sym_out = mrc_num./mrc_denom;
+0164     
+0165     <span class="comment">% Channel gain per subcarrier</span>
+0166     gain_per_subcarrier = mrc_denom;
+0167     
+0168     <span class="comment">% SNR per subcarrier for computing LLR values. Average SNR is limited in order to prevent ultra-large LLRs</span>
+0169     snr = gain_per_subcarrier * min(snr_avg, db2pow(26));
+0170     
+0171     <span class="comment">% LLR demapping</span>
+0172     llr_in = <a href="llr_demap.html" class="code" title="function llr_out = llr_demap(sym_in, q, snr_vec)">llr_demap</a>(sym_out.', PHY.n_bpscs, snr);
+0173     
+0174     <span class="comment">% Deinterleaving</span>
+0175     x_data = <a href="deinterleaver.html" class="code" title="function out = deinterleaver(in, n_bpscs, n_cbps, ppdu_fmt, n_chan)">deinterleaver</a>(llr_in, PHY.n_bpscs, PHY.n_cbps, PHY.ppdu_fmt, PHY.n_chan);
+0176     
+0177     <span class="comment">% Process through Viterbi decoder or store for LDPC processing</span>
+0178     <span class="keyword">if</span> (PHY.ppdu_fmt == 1)
+0179         <span class="comment">% Store output binary data per OFDM symbol</span>
+0180         data_bcc_vec(:, i_sym) = <a href="bcc_dec.html" class="code" title="function bits_out = bcc_dec(llr_in, r_num, bcc_init)">bcc_dec</a>(x_data', PHY.r_num, (i_sym == 1));
+0181     <span class="keyword">else</span>
+0182         <span class="comment">% Store data for LDPC processing</span>
+0183         data_ldpc_vec(:, i_sym) = x_data;
+0184     <span class="keyword">end</span>
+0185     
+0186     <span class="comment">% EVM for debugging</span>
+0187     evm_mtx(:, i_sym) = abs(data_f_mtx(PHY.data_idx, i_sym) - sym_out).^2;
+0188 <span class="keyword">end</span>
+0189 
+0190 <span class="comment">% Last pass of Viterbi or LDPC decoder</span>
+0191 <span class="keyword">if</span> (PHY.ppdu_fmt == 1)
+0192     <span class="comment">% Last pass of Viterbi decoder</span>
+0193     bits_out = <a href="bcc_dec.html" class="code" title="function bits_out = bcc_dec(llr_in, r_num, bcc_init)">bcc_dec</a>(zeros(96*2, 1), PHY.r_num, false);
+0194     data_out = [data_bcc_vec(:); bits_out];
+0195     
+0196     <span class="comment">% Descrambling</span>
+0197     descr_msg = <a href="descrambler_rx.html" class="code" title="function out = descrambler_rx(d_in)">descrambler_rx</a>(logical(data_out(97:end)));
+0198 <span class="keyword">else</span>
+0199     data_out = <a href="ldpc_dec.html" class="code" title="function unc_bits = ldpc_dec(LDPC, llr_in, ldpc_cfg)">ldpc_dec</a>(PHY.LDPC, [data_ldpc_vec(:); zeros(PHY.n_cbps,1)], RX.ldpc_cfg);
+0200     
+0201     <span class="comment">% Descrambling</span>
+0202     descr_msg = <a href="descrambler_rx.html" class="code" title="function out = descrambler_rx(d_in)">descrambler_rx</a>(logical(data_out));
+0203 <span class="keyword">end</span>
+0204 
+0205 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

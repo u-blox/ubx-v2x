@@ -1,9 +1,9 @@
 function out = mapper_tx(in, q)
 %MAPPER_TX Modulation mapper
 %
-%   Author: Ioannis Sarris, u-blox
-%   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 19-February-2019
+%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+%   contact email: ioannis.sarris@u-blox.com
+%   August 2018; Last revision: 04-December-2020
 
 % Copyright (C) u-blox
 %
@@ -26,8 +26,17 @@ function out = mapper_tx(in, q)
 % Get all possible decimal values for q
 q_vec = 0:2^q - 1;
 
+dcm_enabled = false;
 % Create modulation table and appropriate normalization factor
 switch q
+    case 0.5 % BPSK-DCM
+        w = [-1 1].';
+        dcm_enabled = true;
+        q = 1; %update q value
+        q_vec = 0:2^q - 1;
+        ibits = q_vec;
+        mod_table = w(ibits + 1);
+        norm_factor = 1;
     case 1 % BPSK
         w = [-1 1].';
         ibits = q_vec;
@@ -55,6 +64,13 @@ switch q
         mod_table = (w(ibits + 1) + 1j*w(qbits + 1));
         norm_factor = 7/sqrt(42);
         
+    case 8 % 256-QAM
+        w = (1/15)*[-15 -13 -9 -11 -1 -3 -7 -5 15 13 9 11 1 3 7 5].';
+        ibits = floor(q_vec/16);
+        qbits = bitand(q_vec, 15);
+        mod_table = (w(ibits + 1) + 1j*w(qbits + 1));
+        norm_factor = 15/sqrt(170);
+        
     otherwise % Needed for code-generation
         mod_table = complex(zeros(0, 1));
         norm_factor = 1;
@@ -68,5 +84,12 @@ dec_val = bi2de(bin_vec, 'left-msb');
 
 % Modulation symbols are obtained by mapping to modulation table
 out = norm_factor*mod_table(dec_val + 1, 1);
+
+% DCM constellation mapping
+if (dcm_enabled)
+    n_sd = length(bin_vec);
+    k = [0:n_sd - 1]';
+    out = [out; exp(1j*(k + n_sd)*pi).*out];
+end
 
 end

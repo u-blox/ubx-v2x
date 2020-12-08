@@ -1,9 +1,9 @@
-function [f_idx, f_cfo] = fine_sync(in, c_idx)
+function [f_idx, f_cfo] = fine_sync(in, c_idx, n_chan)
 %FINE_SYNC Fine synchronization
 %
-%   Author: Ioannis Sarris, u-blox
-%   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 19-February-2019
+%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+%   contact email: ioannis.sarris@u-blox.com
+%   August 2018; Last revision: 04-December-2020
 
 % Copyright (C) u-blox
 %
@@ -24,23 +24,40 @@ function [f_idx, f_cfo] = fine_sync(in, c_idx)
 % Purpose: V2X baseband simulation model
 
 % Obtain original LTF waveform
-ltf_wf = ltf_tx(0);
+ltf_wf = ltf_tx(0, n_chan);
 
 % Input LTF signal
-xc_in = in(c_idx + 160:c_idx + 223);
+i_rx = 1;
+offset = 160*n_chan; % number of samples in L-STF
+xc_in = in((0:64*n_chan - 1) + c_idx + offset, i_rx);
 
 % Cross-correlation of input with reference signals
-xc = abs(xcorr(ltf_wf(33:96), xc_in));
+xc = abs(xcorr(ltf_wf(32*n_chan+1:96*n_chan), xc_in));
 
 % Find the maximum value
 [~, tmp] = max(xc);
 
 % Adjust index
-f_idx = 216 - tmp + c_idx;
+if n_chan == 1
+    % should be 285 for AWGN and s0_len==100
+    % 285 = 1+100+160+24, i.e., discard the first 24 symbols of the length 32 CP of the LTF
+    f_idx = 216 - tmp + c_idx;
+else
+    % should be 469 for AWGN and s0_len==100
+    % 469 = 1+100+320+48, i.e., discard the first 48 symbols of the length 64 CP of the LTF
+    f_idx = 432 - tmp + c_idx ;
+end
 
 % Fine CFO estimation
-r1 = in(f_idx:(f_idx + 63), 1);
-r2 = in((f_idx + 64):(f_idx + 127), 1);
-f_cfo = -angle(sum(r1.*conj(r2)))/64/2/pi;
+if (n_chan == 1)
+    r1 = in(f_idx:(f_idx + 63), 1);
+    r2 = in((f_idx + 64):(f_idx + 127), 1);
+    f_cfo = -angle(sum(r1.*conj(r2)))/64/2/pi;
+elseif (n_chan == 2)
+    % TODO: f_cfo estimation for 20 MHz waveforms
+    f_cfo = 0;
+else
+    error('n_chan not supported')
+end
 
 end

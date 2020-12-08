@@ -1,9 +1,9 @@
-function [pn_state, out] = scrambler_tx(in, pn_state)
+function [pn_state, out] = scrambler_tx(d_in, pn_state)
 %SCRAMBLER Bit scrambler
 %
-%   Author: Ioannis Sarris, u-blox
-%   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 30-August-2018
+%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+%   contact email: ioannis.sarris@u-blox.com
+%   August 2018; Last revision: 04-December-2020
 
 % Copyright (C) u-blox
 %
@@ -24,7 +24,7 @@ function [pn_state, out] = scrambler_tx(in, pn_state)
 % Purpose: V2X baseband simulation model
 
 % Initialize output
-len = length(in);
+len = size(d_in, 1);
 out = false(len, 1);
 
 % Perform scrambling per bit, use PN = X^7 + X^4 + 1
@@ -33,7 +33,7 @@ for ii = 1:len
     tmp2 = pn_state(1:6, 1);
     pn_state(1, 1) = tmp1;
     pn_state(2:7, 1) = tmp2;
-    out(ii) = xor(in(ii), pn_state(1));
+    out(ii) = xor(d_in(ii), pn_state(1));
 end
 
 end

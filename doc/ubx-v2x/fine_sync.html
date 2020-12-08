@@ -1,0 +1,114 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of fine_sync</title>
+  <meta name="keywords" content="fine_sync">
+  <meta name="description" content="FINE_SYNC Fine synchronization">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; fine_sync.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>fine_sync
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>FINE_SYNC Fine synchronization</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [f_idx, f_cfo] = fine_sync(in, c_idx, n_chan) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">FINE_SYNC Fine synchronization
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="ltf_tx.html" class="code" title="function ltf_wf = ltf_tx(w_beta, n_chan)">ltf_tx</a>	LTF_TX Generates LTF preamble</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="sim_rx.html" class="code" title="function [err] = sim_rx(rx_wf, data_f_mtx, RX, TX, s0_len)">sim_rx</a>	SIM_RX High-level receiver function</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [f_idx, f_cfo] = fine_sync(in, c_idx, n_chan)</a>
+0002 <span class="comment">%FINE_SYNC Fine synchronization</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">% Obtain original LTF waveform</span>
+0027 ltf_wf = <a href="ltf_tx.html" class="code" title="function ltf_wf = ltf_tx(w_beta, n_chan)">ltf_tx</a>(0, n_chan);
+0028 
+0029 <span class="comment">% Input LTF signal</span>
+0030 i_rx = 1;
+0031 offset = 160*n_chan; <span class="comment">% number of samples in L-STF</span>
+0032 xc_in = in((0:64*n_chan - 1) + c_idx + offset, i_rx);
+0033 
+0034 <span class="comment">% Cross-correlation of input with reference signals</span>
+0035 xc = abs(xcorr(ltf_wf(32*n_chan+1:96*n_chan), xc_in));
+0036 
+0037 <span class="comment">% Find the maximum value</span>
+0038 [~, tmp] = max(xc);
+0039 
+0040 <span class="comment">% Adjust index</span>
+0041 <span class="keyword">if</span> n_chan == 1
+0042     <span class="comment">% should be 285 for AWGN and s0_len==100</span>
+0043     <span class="comment">% 285 = 1+100+160+24, i.e., discard the first 24 symbols of the length 32 CP of the LTF</span>
+0044     f_idx = 216 - tmp + c_idx;
+0045 <span class="keyword">else</span>
+0046     <span class="comment">% should be 469 for AWGN and s0_len==100</span>
+0047     <span class="comment">% 469 = 1+100+320+48, i.e., discard the first 48 symbols of the length 64 CP of the LTF</span>
+0048     f_idx = 432 - tmp + c_idx ;
+0049 <span class="keyword">end</span>
+0050 
+0051 <span class="comment">% Fine CFO estimation</span>
+0052 <span class="keyword">if</span> (n_chan == 1)
+0053     r1 = in(f_idx:(f_idx + 63), 1);
+0054     r2 = in((f_idx + 64):(f_idx + 127), 1);
+0055     f_cfo = -angle(sum(r1.*conj(r2)))/64/2/pi;
+0056 <span class="keyword">elseif</span> (n_chan == 2)
+0057     <span class="comment">% TODO: f_cfo estimation for 20 MHz waveforms</span>
+0058     f_cfo = 0;
+0059 <span class="keyword">else</span>
+0060     error(<span class="string">'n_chan not supported'</span>)
+0061 <span class="keyword">end</span>
+0062 
+0063 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

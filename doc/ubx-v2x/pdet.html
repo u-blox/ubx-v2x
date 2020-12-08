@@ -1,0 +1,120 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of pdet</title>
+  <meta name="keywords" content="pdet">
+  <meta name="description" content="PDET Detects start of packet">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; pdet.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>pdet
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>PDET Detects start of packet</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [idx, c_cfo, err] = pdet(in, s0_len, pdet_thold, n_chan) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">PDET Detects start of packet
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="stf_tx.html" class="code" title="function stf_wf = stf_tx(w_beta, n_chan)">stf_tx</a>	STF_TX Generates STF preamble</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="sim_rx.html" class="code" title="function [err] = sim_rx(rx_wf, data_f_mtx, RX, TX, s0_len)">sim_rx</a>	SIM_RX High-level receiver function</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [idx, c_cfo, err] = pdet(in, s0_len, pdet_thold, n_chan)</a>
+0002 <span class="comment">%PDET Detects start of packet</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">% Obtain original STF waveform</span>
+0027 <span class="comment">% In 20 MHz channels, the full (duplicated) 20 MHz waveform is used</span>
+0028 <span class="comment">% TODO: change algorithm to work also when there is no or a different signal on one of the 10 MHz subchannels</span>
+0029 stf_wf = <a href="stf_tx.html" class="code" title="function stf_wf = stf_tx(w_beta, n_chan)">stf_tx</a>(0, n_chan);
+0030 
+0031 <span class="comment">% pdet currently only works only for this RX chain/antenna</span>
+0032 <span class="comment">% TODO: enable RX diversity in pdet</span>
+0033 i_rx = 1;
+0034 
+0035 <span class="comment">% Input first half of STF signal</span>
+0036 <span class="comment">% TODO: use the full waveform</span>
+0037 xc_in = in(1:(s0_len + 80*n_chan), i_rx);
+0038 
+0039 <span class="comment">% X-correlation of received waveform with known STF</span>
+0040 xc = xcorr(stf_wf(1:64*n_chan), xc_in);
+0041 
+0042 xc_crop = abs(xc(s0_len + 80*n_chan + 64*n_chan-1:-1:1));
+0043 
+0044 <span class="comment">% Find first occurence of value above threshold</span>
+0045 idx_vec = find((xc_crop &gt; pdet_thold), 1, <span class="string">'first'</span>);
+0046 
+0047 <span class="comment">% Check if index is valid, else declare packet error</span>
+0048 <span class="keyword">if</span> (isempty(idx_vec) || (idx_vec(1) &lt; s0_len))
+0049     c_cfo = [];
+0050     idx = 0;
+0051     err = true;
+0052     <span class="keyword">return</span>
+0053 <span class="keyword">else</span>
+0054     idx = idx_vec(1);
+0055     err = false;
+0056 <span class="keyword">end</span>
+0057 <span class="comment">% Coarse CFO estimation</span>
+0058 <span class="keyword">if</span> n_chan == 1
+0059     r1 = in(idx:(idx + 15), 1);
+0060     r2 = in((idx + 16):(idx + 31), 1);
+0061     c_cfo = -angle(sum(r1.*conj(r2)))/16/2/pi;
+0062 <span class="keyword">elseif</span> n_chan == 2
+0063     <span class="comment">% TODO: coarse CFO estimation for 20 MHz reception</span>
+0064     c_cfo = 0;
+0065 <span class="keyword">else</span>
+0066     error(<span class="string">'n_chan not supported'</span>)
+0067 <span class="keyword">end</span>
+0068 
+0069 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

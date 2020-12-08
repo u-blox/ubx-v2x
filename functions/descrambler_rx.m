@@ -1,9 +1,9 @@
-function out = descrambler_rx(in, bcc_init)
+function out = descrambler_rx(d_in)
 %DESCRAMBLER Bit descrambler
 %
-%   Author: Ioannis Sarris, u-blox
-%   email: ioannis.sarris@u-blox.com
-%   August 2018; Last revision: 30-August-2018
+%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+%   contact email: ioannis.sarris@u-blox.com
+%   August 2018; Last revision: 04-December-2020
 
 % Copyright (C) u-blox
 %
@@ -25,13 +25,9 @@ function out = descrambler_rx(in, bcc_init)
 
 persistent pn_seq
 
-% Initialize descrambler if not initialized
-if bcc_init || isempty(pn_seq)
-    tmp_in = in(8:end, 1);
-    pn_seq = in(7:-1:1, 1);
-else
-    tmp_in = in;
-end
+len = size(d_in, 1);
+tmp_in = d_in(8:len, 1);
+pn_seq = d_in(7:-1:1, 1);
 
 % Perform scrambling (identical to descrabling)
 [pn_seq, out] = scrambler_tx(tmp_in, pn_seq);

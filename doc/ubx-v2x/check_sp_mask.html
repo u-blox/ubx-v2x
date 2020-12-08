@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of check_sp_mask</title>
+  <meta name="keywords" content="check_sp_mask">
+  <meta name="description" content="CHECK_SP_MASK Check spectral mask of transmitted waveform for compliance to Class C specifications">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; check_sp_mask.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>check_sp_mask
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>CHECK_SP_MASK Check spectral mask of transmitted waveform for compliance to Class C specifications</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function check_sp_mask(in, filt_len, n_sym, ovs, enabled) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">CHECK_SP_MASK Check spectral mask of transmitted waveform for compliance to Class C specifications
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="batch_sim.html" class="code" title="">batch_sim</a>	BATCH_SIM - Batch simulation script</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function check_sp_mask(in, filt_len, n_sym, ovs, enabled)</a>
+0002 <span class="comment">%CHECK_SP_MASK Check spectral mask of transmitted waveform for compliance to Class C specifications</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="keyword">if</span> enabled
+0027     <span class="comment">% Start/end indices of DATA</span>
+0028     idx0 = filt_len/2 + (160 + 160 + 80)*ovs;
+0029     idx1 = idx0 + n_sym*80*ovs;
+0030     
+0031     <span class="comment">% Select DATA waveform</span>
+0032     in = in(idx0:idx1);
+0033     
+0034     <span class="comment">% IEEE Std 802.11-2012 Annex D.2.3, Table D-5: Class C STA</span>
+0035     dBrLimits = [-50  -50 -40 -32  -26 0   0  -26 -32 -40 -50 -50];
+0036     fLimits   = [-Inf -15 -10 -5.5 -5 -4.5 4.5 5  5.5  10  15 Inf];
+0037     
+0038     vbw = 300;          <span class="comment">% Video bandwidth</span>
+0039     rbw = 100e3;        <span class="comment">% Resolution bandwidth</span>
+0040     N = floor(rbw/vbw); <span class="comment">% Number of spectral averages</span>
+0041     
+0042     <span class="comment">% Construct dsp.SpectrumAnalyzer and set SpectralMask property</span>
+0043     spectrumAnalyzer = dsp.SpectrumAnalyzer(<span class="keyword">...</span>
+0044         <span class="string">'SampleRate'</span>, 10e6*ovs, <span class="keyword">...</span>
+0045         <span class="string">'SpectrumType'</span>,<span class="string">'Power density'</span>, <span class="keyword">...</span>
+0046         <span class="string">'PowerUnits'</span>,<span class="string">'dBm'</span>, <span class="keyword">...</span>
+0047         <span class="string">'SpectralAverages'</span>,N, <span class="keyword">...</span>
+0048         <span class="string">'RBWSource'</span>,<span class="string">'Property'</span>, <span class="keyword">...</span>
+0049         <span class="string">'RBW'</span>,rbw, <span class="keyword">...</span>
+0050         <span class="string">'ReducePlotRate'</span>,false, <span class="keyword">...</span>
+0051         <span class="string">'ShowLegend'</span>,true, <span class="keyword">...</span>
+0052         <span class="string">'Name'</span>, <span class="string">'Spectrum Analyzer'</span>);
+0053     spectrumAnalyzer.SpectralMask.EnabledMasks = <span class="string">'Upper'</span>;
+0054     spectrumAnalyzer.SpectralMask.ReferenceLevel = <span class="string">'Spectrum peak'</span>;
+0055     spectrumAnalyzer.SpectralMask.UpperMask = [fLimits*1e6; dBrLimits].';
+0056     
+0057     <span class="comment">% Get the number of segments to process</span>
+0058     setup(spectrumAnalyzer, complex(in(1)));
+0059     segLen = spectrumAnalyzer.getFramework.Visual.SpectrumObject.getInputSamplesPerUpdate(true);
+0060     numSegments = floor(size(in, 1)/segLen);
+0061     
+0062     <span class="comment">% Process each segment and test the PSD against the mask</span>
+0063     <span class="keyword">for</span> idx = 1:numSegments
+0064         spectrumAnalyzer(in((idx - 1)*segLen + (1:segLen), 1));
+0065     <span class="keyword">end</span>
+0066     release(spectrumAnalyzer);
+0067     assignin(<span class="string">'caller'</span>, <span class="string">'spectrumAnalyzer'</span>, spectrumAnalyzer);
+0068 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

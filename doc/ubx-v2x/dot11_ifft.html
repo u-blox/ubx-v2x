@@ -1,0 +1,81 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of dot11_ifft</title>
+  <meta name="keywords" content="dot11_ifft">
+  <meta name="description" content="DOT11_IFFT 802.11 IFFT">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; dot11_ifft.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>dot11_ifft
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>DOT11_IFFT 802.11 IFFT</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function out = dot11_ifft(in, n_fft) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">DOT11_IFFT 802.11 IFFT
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="data_tx.html" class="code" title="function [data_wf, data_f_mtx] = data_tx(PHY, pad_len, padding_out, w_beta)">data_tx</a>	DATA_TX Transmitter processing of all DATA OFDM symbols</li><li><a href="ltf_tx.html" class="code" title="function ltf_wf = ltf_tx(w_beta, n_chan)">ltf_tx</a>	LTF_TX Generates LTF preamble</li><li><a href="ngv_ltf_tx.html" class="code" title="function ngv_ltf_wf = ngv_ltf_tx(w_beta, n_chan, n_ss, ltf_fmt)">ngv_ltf_tx</a>	NGV_LTF_TX Generates NGV-LTF preamble</li><li><a href="ngv_sig_tx.html" class="code" title="function ngv_sig_wf = ngv_sig_tx(PHY, w_beta, n_chan)">ngv_sig_tx</a>	NGV_SIG_TX NGV_SIG message transmitter/parser</li><li><a href="ngv_stf_tx.html" class="code" title="function ngv_stf_wf = ngv_stf_tx(w_beta, n_chan)">ngv_stf_tx</a>	NGV_STF_TX Generates NGV-STF preamble</li><li><a href="sig_tx.html" class="code" title="function sig_wf = sig_tx(PHY, TX, n_chan)">sig_tx</a>	SIG_TX SIG message transmitter/parser</li><li><a href="stf_tx.html" class="code" title="function stf_wf = stf_tx(w_beta, n_chan)">stf_tx</a>	STF_TX Generates STF preamble</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function out = dot11_ifft(in, n_fft)</a>
+0002 <span class="comment">%DOT11_IFFT 802.11 IFFT</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">% IFFT with shifting and normalization</span>
+0027 idx = [(n_fft/2 + 1):n_fft, 1:(n_fft/2)];
+0028 out = n_fft*ifft(in(idx, :), n_fft);
+0029 
+0030 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

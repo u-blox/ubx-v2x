@@ -1,0 +1,329 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of batch_sim</title>
+  <meta name="keywords" content="batch_sim">
+  <meta name="description" content="BATCH_SIM - Batch simulation script">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; batch_sim.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>batch_sim
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>BATCH_SIM - Batch simulation script</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>This is a script file. </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">BATCH_SIM - Batch simulation script
+   Top-level simulation script looping over MCS, SNR and Monte-Carlo iterations
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="add_rx_pn.html" class="code" title="function out = add_rx_pn(in, enabled)">add_rx_pn</a>	ADD_RX_PN Apply phase noise at the receiver</li><li><a href="add_tx_pn.html" class="code" title="function out = add_tx_pn(in, enabled)">add_tx_pn</a>	ADD_TX_PN Apply phase noise at the transmitter</li><li><a href="apply_cfo.html" class="code" title="function out = apply_cfo(in, cfo)">apply_cfo</a>	APPLY_CFO Apply frequency offset to input waveform</li><li><a href="chan_mod_init.html" class="code" title="function [chan_obj, chan_name] = chan_mod_init(channel_model, bw_mhz, ovs, n_tx_ant, n_rx_ant)">chan_mod_init</a>	CHAN_MOD_INIT Channel model initialization according to Car-2-Car models</li><li><a href="check_sp_mask.html" class="code" title="function check_sp_mask(in, filt_len, n_sym, ovs, enabled)">check_sp_mask</a>	CHECK_SP_MASK Check spectral mask of transmitted waveform for compliance to Class C specifications</li><li><a href="downsample_rx.html" class="code" title="function out = downsample_rx(in, ovs, filt_len)">downsample_rx</a>	DOWNSAMPLE_TX Downsample received signal by an integer factor</li><li><a href="n_bpscs_to_string.html" class="code" title="function [modulation_scheme_string] = n_bpscs_to_string(n_bpscs)">n_bpscs_to_string</a>	N_BPSCS_TO_STRING Convert number of bits per modulation symbol to readable string</li><li><a href="pa_model.html" class="code" title="function out = pa_model(in, enabled)">pa_model</a>	PA_MODEL Apply power amplifier non-linearity</li><li><a href="sim_rx.html" class="code" title="function [err] = sim_rx(rx_wf, data_f_mtx, RX, TX, s0_len)">sim_rx</a>	SIM_RX High-level receiver function</li><li><a href="sim_tx.html" class="code" title="function [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(TX)">sim_tx</a>	SIM_TX High-level transmitter function</li><li><a href="tx_phy_params.html" class="code" title="function [PHY, data_msg] = tx_phy_params(mode, mcs, tx_payload_len, ppdu_fmt, mid, n_ss, ngvltf_fmt, n_chan, rx_lsig_len, rx_ngvsig_extra_sym)">tx_phy_params</a>	TX_PHY_PARAMS Initializes PHY layer parameters</li><li><a href="upsample_tx.html" class="code" title="function [out, filt_len] = upsample_tx(in, ovs)">upsample_tx</a>	UPSAMPLE_TX Oversample transmitted signal by an integer factor</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">%BATCH_SIM - Batch simulation script</span>
+0002 <span class="comment">%   Top-level simulation script looping over MCS, SNR and Monte-Carlo iterations</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">%% Initialization</span>
+0027 clc
+0028 clear all
+0029 close all
+0030 
+0031 addpath(<span class="string">'./functions;./ext;./mex'</span>)
+0032 
+0033 <span class="comment">% Set random number generator to specific seed</span>
+0034 rand_stream = RandStream(<span class="string">'mt19937ar'</span>, <span class="string">'Seed'</span>, 0);
+0035 RandStream.setGlobalStream(rand_stream);
+0036 
+0037 <span class="comment">%% Simulation Parameters</span>
+0038 <span class="comment">% General parameters</span>
+0039 SIM.mcs_vec         = 0:10;     <span class="comment">% Scalar or vector containing MCS values (0...10)</span>
+0040 SIM.snr             = -5:.5:35;    <span class="comment">% Scalar or vector containing SNR values (dB)</span>
+0041 SIM.ovs             = 1;        <span class="comment">% Oversampling factor</span>
+0042 SIM.channel_model   = 1;        <span class="comment">% Channel model (0: AWGN, 1-5: C2C models R-LOS, UA-LOS, C-NLOS, H-LOS and H-NLOS, 6-10: Enhanced C2C models R-LOS-ENH, UA-LOS-ENH, C-NLOS-ENH, H-LOS-ENH and H-NLOS-ENH)</span>
+0043 SIM.use_mex         = true;    <span class="comment">% Use MEX functions to accelerate simulation</span>
+0044 SIM.n_iter          = 300;     <span class="comment">% Number of Monte-Carlo iterations</span>
+0045 SIM.max_error       = 100;      <span class="comment">% Number of packet errors before moving to next SNR point</span>
+0046 SIM.min_error       = .005;     <span class="comment">% Minimum PER target, beyond which, loop moves to next SNR point</span>
+0047 SIM.check_sp        = false;    <span class="comment">% Plot Tx spectrum and check for compliance</span>
+0048 SIM.apply_cfo       = false;    <span class="comment">% Apply CFO impairment on Tx and Rx</span>
+0049 
+0050 <span class="comment">% Transmitter parameters</span>
+0051 TX.payload_len      = 350;      <span class="comment">% MPDU_LENGTH / PHY payload length (bytes) (without A-MPDU header and without MAC padding)</span>
+0052 TX.window_en        = false;    <span class="comment">% Apply time-domain windowing</span>
+0053 TX.w_beta           = 0;        <span class="comment">% Kaiser window beta coefficient for spectral shaping (use &quot;0&quot; for disabling this filter)</span>
+0054 TX.pa_enable        = false;    <span class="comment">% Apply PA non-linearity model</span>
+0055 TX.pn_en            = false;    <span class="comment">% Model Tx phase noise</span>
+0056 TX.bw_mhz           = 10;       <span class="comment">% Bandwidth (10 or 20 MHz)</span>
+0057 
+0058 <span class="comment">% Candidate NGV features</span>
+0059 TX.ppdu_fmt         = 1;        <span class="comment">% PPDU format (1: Legacy, 2: NGV)</span>
+0060 TX.mid              = 4;        <span class="comment">% NGV only: midamble period 4/8/16 symbols</span>
+0061 TX.n_ss             = 1;        <span class="comment">% NGV only: Number of MIMO spatial streams (1..2), 2 is not yet supported</span>
+0062 TX.ltf_fmt_init     = 0;        <span class="comment">% NGV only: LTF format for MCS 0-9. (0: NGV-LTF-2x (8 us, default), 1: compressed NGV-LTF-1x (4.8 us))</span>
+0063                                 <span class="comment">% Note: MCS 10 always uses LTF format 2, NGV-LTF-repeat (14.4 us), but this will be set automatically</span>
+0064 TX.n_tx_ant         = 1;        <span class="comment">% Number of transmit antennas</span>
+0065 
+0066 <span class="comment">% Receiver parameters</span>
+0067 RX.n_rx_ant         = 1;        <span class="comment">% Number of receive antennas</span>
+0068 RX.bw_mhz           = TX.bw_mhz; <span class="comment">% Bandwidth of the received waveform</span>
+0069 RX.pdet_thold_def   = 20;       <span class="comment">% Packet detection threshold</span>
+0070 RX.t_depth          = 2;        <span class="comment">% Channel tracking time depth averaging (OFDM symbols)</span>
+0071 RX.pn_en            = false;    <span class="comment">% Model Rx phase noise</span>
+0072 RX.ldpc_cfg.iter    = 50;       <span class="comment">% Number of iterations</span>
+0073 RX.ldpc_cfg.minsum  = 1;        <span class="comment">% Only for external decoder 0: Use sum-product  1: Use min-sum algorithm</span>
+0074 
+0075 error_char_vec = <span class="string">'.xo!uhnf!'</span>; <span class="comment">% For printing receiver message decoding results</span>
+0076 <span class="comment">% 0 =&gt; .   no error</span>
+0077 <span class="comment">% 1 =&gt; x   pdet error</span>
+0078 <span class="comment">% 2 =&gt; o   SIG error</span>
+0079 <span class="comment">% 3 =&gt; !   data decoding error</span>
+0080 <span class="comment">% 4 =&gt; u   undetected PHY parameter error (SIG/NGV-SIG)</span>
+0081 <span class="comment">% 5 =&gt; h   heuristic error</span>
+0082 <span class="comment">% 6 =&gt; n   NGV-SIG error</span>
+0083 <span class="comment">% 7 =&gt; f   format / autodetection error (NGV and legacy formats confused)</span>
+0084 <span class="comment">% 8 =&gt; !   A-MPDU header error (part of the data field)</span>
+0085 
+0086 ppdu_descriptor = {<span class="string">'p'</span>, <span class="string">'bd'</span>};
+0087 
+0088 tic
+0089 
+0090 <span class="keyword">if</span> (TX.ppdu_fmt == 1 &amp;&amp; TX.bw_mhz == 20)
+0091     disp(<span class="string">'Warning: non-usual 20 MHz transmissions with 802.11p (4 us symbols, 0.8 us GI, 312.5 kHz subcarrier spacing)'</span>)
+0092     <span class="comment">% Same PHY format as regular 802.11a 20 MHz. There is only a single 20 MHz wide (sub-)channel</span>
+0093     TX.n_chan = 1;
+0094     RX.n_chan = 1;
+0095 <span class="keyword">else</span>
+0096     <span class="comment">% Default for regular 10 MHz 802.11p and for 10/20 MHz 802.11bd, with 156 kHz subcarrier spacing</span>
+0097     <span class="comment">% The number of adjacent subchannels (1 or 2) is determined by the bandwidth (10 or 20)</span>
+0098     <span class="comment">% TX and RX may be different (Receiver in 20 MHz mode must also decode a 10 MHz PPDU in one subchannel)</span>
+0099     TX.n_chan = TX.bw_mhz/10;
+0100     RX.n_chan = RX.bw_mhz/10;
+0101 <span class="keyword">end</span>
+0102 
+0103 <span class="comment">% Check if midamble peridocity setting is valid</span>
+0104 <span class="keyword">if</span> (TX.ppdu_fmt == 1)
+0105     TX.mid = 0;
+0106 <span class="keyword">else</span>
+0107     <span class="keyword">if</span> ( ~any(TX.mid == [4 8 16]) )
+0108         error(<span class="string">'802.11bd Midamble periodicity (M) should be 4, 8, or 16'</span>)
+0109     <span class="keyword">end</span>
+0110 <span class="keyword">end</span>
+0111 
+0112 <span class="comment">%% Loop for MCS values</span>
+0113 avgTHR = zeros(length(SIM.snr), length(SIM.mcs_vec));
+0114 <span class="keyword">for</span> i_mcs = 1:length(SIM.mcs_vec)
+0115     
+0116     <span class="comment">% Current MCS value</span>
+0117     TX.mcs = SIM.mcs_vec(i_mcs);
+0118     <span class="keyword">if</span> (TX.ppdu_fmt == 1  &amp;&amp; TX.mcs &gt; 7 ) <span class="keyword">...</span>
+0119             || (TX.ppdu_fmt == 2  &amp;&amp; TX.mcs == 9 &amp;&amp; TX.bw_mhz == 10 )
+0120         <span class="comment">% MCS not supported</span>
+0121         <span class="keyword">continue</span>
+0122     <span class="keyword">end</span>
+0123     
+0124     <span class="keyword">if</span> (TX.ppdu_fmt == 2 &amp;&amp; (TX.mcs == 0 || TX.mcs == 10))
+0125         <span class="comment">% MCS 0 (BPSK) and MCS 10 (BPSK-DCM) require a 3 dB power boost for STF and LTF</span>
+0126         <span class="comment">% The packet detection does not yet implement gain control based on STF/LTF power and does not work properly</span>
+0127         <span class="comment">% Workaround: Increase RX pdet threshold to compensate for power boost</span>
+0128         RX.pdet_thold = RX.pdet_thold_def*sqrt(2);
+0129         <span class="comment">% TODO: Implement more realistic pdet and remove this workaround</span>
+0130     <span class="keyword">else</span>
+0131         RX.pdet_thold = RX.pdet_thold_def;
+0132     <span class="keyword">end</span>
+0133     
+0134     <span class="comment">% Initialize channel filter object</span>
+0135     [chan_obj, chan_name] = <a href="chan_mod_init.html" class="code" title="function [chan_obj, chan_name] = chan_mod_init(channel_model, bw_mhz, ovs, n_tx_ant, n_rx_ant)">chan_mod_init</a>(SIM.channel_model, RX.bw_mhz, SIM.ovs, TX.n_tx_ant, RX.n_rx_ant);
+0136     
+0137     <span class="comment">% Debugging message</span>
+0138     PHY0 = <a href="tx_phy_params.html" class="code" title="function [PHY, data_msg] = tx_phy_params(mode, mcs, tx_payload_len, ppdu_fmt, mid, n_ss, ngvltf_fmt, n_chan, rx_lsig_len, rx_ngvsig_extra_sym)">tx_phy_params</a>(<span class="string">'TX'</span>, TX.mcs, TX.payload_len, TX.ppdu_fmt, TX.mid, TX.n_ss, TX.ltf_fmt_init, TX.n_chan, 0, 0);
+0139     fprintf(<span class="string">'\nChannel %i (%s), %s-MCS %i (%s R=%d/%d), %d MHz, M=%d, %dx%d ant'</span>, SIM.channel_model, chan_name, ppdu_descriptor{TX.ppdu_fmt}, TX.mcs, <a href="n_bpscs_to_string.html" class="code" title="function [modulation_scheme_string] = n_bpscs_to_string(n_bpscs)">n_bpscs_to_string</a>(PHY0.n_bpscs),PHY0.r_num,PHY0.r_denom, TX.bw_mhz, TX.mid, TX.n_tx_ant, RX.n_rx_ant);
+0140     
+0141     <span class="comment">%% Loop for SNR values</span>
+0142     avgPER = zeros(length(SIM.snr), 1);
+0143     <span class="keyword">for</span> i_snr = 1:length(SIM.snr)
+0144         <span class="comment">% Total number of transmissions at the current SNR level</span>
+0145         sum_trials = 0;
+0146         <span class="comment">% Number of packer errors at the current SNR level</span>
+0147         sum_error = 0;
+0148         
+0149         <span class="comment">% Debugging message</span>
+0150         fprintf(<span class="string">'\nSNR: %4.1f dB '</span>, SIM.snr(i_snr))
+0151         
+0152         <span class="comment">%% Loop for Monte-Carlo iterations</span>
+0153         <span class="keyword">for</span> i_iter = 1:SIM.n_iter
+0154             <span class="comment">% Fix random seed to allow reproduceability</span>
+0155             rand_seed = i_iter;
+0156             reset(rand_stream, rand_seed);
+0157             
+0158             <span class="comment">% Transmitter model (MEX or M)</span>
+0159             <span class="keyword">if</span> SIM.use_mex
+0160                 [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx_mex(TX);
+0161             <span class="keyword">else</span>
+0162                 [tx_wf, data_f_mtx, data_msg, PHY] = <a href="sim_tx.html" class="code" title="function [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(TX)">sim_tx</a>(TX);
+0163             <span class="keyword">end</span>
+0164             
+0165             <span class="comment">% Add CFO error, assume [-5, 5] ppm per Tx/Rx device</span>
+0166             <span class="keyword">if</span> SIM.apply_cfo
+0167                 cfo_err = sum(rand(2, 1) - .5)*10e-6;
+0168                 tx_wf = <a href="apply_cfo.html" class="code" title="function out = apply_cfo(in, cfo)">apply_cfo</a>(tx_wf, cfo_err);
+0169             <span class="keyword">else</span>
+0170                 cfo_err = 0;
+0171             <span class="keyword">end</span>
+0172             
+0173             <span class="comment">% Apply Tx phase noise</span>
+0174             tx_wf = <a href="add_tx_pn.html" class="code" title="function out = add_tx_pn(in, enabled)">add_tx_pn</a>(tx_wf, TX.pn_en);
+0175             
+0176             <span class="comment">% Mandatory 2x upsampling and frequency shift if transmitting a 10 MHz signal in 20 MHz receive mode</span>
+0177             <span class="comment">% TODO: numerous adaptions at the receiver (in pdet, fine_sync, ...) to support this</span>
+0178             <span class="keyword">if</span> (RX.bw_mhz == 20 &amp;&amp; TX.bw_mhz == 10)
+0179                 [tx_wf, ovs_filt_len1] = <a href="upsample_tx.html" class="code" title="function [out, filt_len] = upsample_tx(in, ovs)">upsample_tx</a>(tx_wf, 2);
+0180                 <span class="comment">% Shift into lower 10 MHz subchannel</span>
+0181                 tx_wf = tx_wf .* exp(-1j*2*pi*(1:length(tx_wf))/128*32).';
+0182             <span class="keyword">end</span>
+0183             
+0184             <span class="comment">% Optional oversampling of the tranmitted waveform</span>
+0185             [tx_wf, ovs_filt_len] = <a href="upsample_tx.html" class="code" title="function [out, filt_len] = upsample_tx(in, ovs)">upsample_tx</a>(tx_wf, SIM.ovs);
+0186             
+0187             <span class="comment">% Apply a memoryless nonlinearity model of the power amplifier</span>
+0188             tx_wf = <a href="pa_model.html" class="code" title="function out = pa_model(in, enabled)">pa_model</a>(tx_wf, TX.pa_enable);
+0189             
+0190             <span class="comment">% Evaluate the PSD and check for compliance</span>
+0191             <a href="check_sp_mask.html" class="code" title="function check_sp_mask(in, filt_len, n_sym, ovs, enabled)">check_sp_mask</a>(tx_wf, ovs_filt_len, PHY.n_sym, SIM.ovs, SIM.check_sp);
+0192             
+0193             <span class="comment">% Append silence samples at the beginning/end of useful waveform</span>
+0194             s0_len = randi([100 200]);
+0195             tx_wf_full = [zeros(s0_len*SIM.ovs, TX.n_tx_ant); tx_wf; zeros((400 - s0_len)*SIM.ovs, TX.n_tx_ant)];
+0196             
+0197             <span class="comment">% If channel model is defined, pass transmitted signal through channel filter</span>
+0198             <span class="keyword">if</span> (SIM.channel_model == 0)
+0199                 <span class="comment">% Enable multi-antenna modes for AWGN channel</span>
+0200                 <span class="keyword">if</span> TX.n_tx_ant == 2 &amp;&amp; RX.n_rx_ant &gt; 1
+0201                     vec2 = [1 -1 1 1 ]; <span class="comment">% entry i denotes the channel from TX antenna 2 to receive antenna i</span>
+0202                     rx_wf = repmat(tx_wf_full(:,1), 1, RX.n_rx_ant) + repmat(tx_wf_full(:,2), 1, RX.n_rx_ant).*vec2(1:RX.n_rx_ant);
+0203                 <span class="keyword">else</span>
+0204                     rx_wf = repmat(tx_wf_full, 1, RX.n_rx_ant);
+0205                 <span class="keyword">end</span>
+0206             <span class="keyword">else</span>
+0207                 reset(chan_obj);
+0208                 rx_wf = step(chan_obj, tx_wf_full);
+0209             <span class="keyword">end</span>
+0210             
+0211             <span class="comment">% Optional downsampling of the received waveform</span>
+0212             rx_wf = <a href="downsample_rx.html" class="code" title="function out = downsample_rx(in, ovs, filt_len)">downsample_rx</a>(rx_wf, SIM.ovs, ovs_filt_len);
+0213             
+0214             <span class="comment">% Apply Rx phase noise</span>
+0215             rx_wf = <a href="add_rx_pn.html" class="code" title="function out = add_rx_pn(in, enabled)">add_rx_pn</a>(rx_wf, RX.pn_en);
+0216             
+0217             <span class="comment">% Add AWGN noise</span>
+0218             rx_wf = awgn(rx_wf, SIM.snr(i_snr));
+0219             
+0220             <span class="comment">% Receiver model (MEX or M)</span>
+0221             <span class="keyword">if</span> SIM.use_mex
+0222                 err = sim_rx_mex(rx_wf, data_f_mtx, RX, TX, s0_len);
+0223             <span class="keyword">else</span>
+0224                 err = <a href="sim_rx.html" class="code" title="function [err] = sim_rx(rx_wf, data_f_mtx, RX, TX, s0_len)">sim_rx</a>(rx_wf, data_f_mtx, RX, TX, s0_len);
+0225             <span class="keyword">end</span>
+0226             
+0227             <span class="comment">% Update sum of PER</span>
+0228             sum_error = sum_error + (err &gt; 0);
+0229             sum_trials = sum_trials + 1;
+0230             
+0231             <span class="comment">% Print error status character</span>
+0232             error_status = error_char_vec(err+1);
+0233             fprintf(error_status);
+0234             <span class="comment">% Check if number of errors exceeds target</span>
+0235             <span class="keyword">if</span> (sum_error &gt;= SIM.max_error)
+0236                 <span class="keyword">break</span>
+0237             <span class="keyword">end</span>
+0238             
+0239             pause(.001);
+0240         <span class="keyword">end</span>
+0241         
+0242         avgPER(i_snr) = sum_error/sum_trials;
+0243         
+0244         <span class="comment">% If PER drops below min_error, break SNR loop</span>
+0245         <span class="keyword">if</span> (sum_error/sum_trials &lt; SIM.min_error)
+0246             <span class="keyword">break</span>
+0247         <span class="keyword">end</span>
+0248     <span class="keyword">end</span>
+0249     fprintf(<span class="string">'\n'</span>)
+0250     
+0251     <span class="comment">% Find throughput efficiency factor (affected by midamble periodicity and duration of the midamble symbols, which is 8, 4.8 or 14.4 us)</span>
+0252     <span class="keyword">if</span> (TX.mid == 0)
+0253         eff = 1;
+0254     <span class="keyword">else</span>
+0255         eff = (TX.mid*8)/(TX.mid*8 + PHY0.n_ss * PHY0.t_ngvltf);
+0256     <span class="keyword">end</span>
+0257     <span class="comment">% Goodput calculation</span>
+0258     drate = eff*PHY0.n_sd*PHY0.n_dbps./PHY0.n_cbps.*PHY0.n_bpscs/8e-6*1e-6;
+0259     avgTHR(:, i_mcs) = (1 - avgPER).*repmat(drate, size(avgPER, 1), 1);
+0260     
+0261     figure(SIM.channel_model + 1);
+0262     <span class="comment">% Plot PER</span>
+0263     subplot(1, 2, 1)
+0264     title(sprintf(<span class="string">'\nChannel %i (%s), M=%d'</span>, SIM.channel_model, chan_name, TX.mid));
+0265     legend_string = sprintf(<span class="string">'%s-MCS-%i (%s %d/%d)'</span>, ppdu_descriptor{TX.ppdu_fmt}, TX.mcs, <a href="n_bpscs_to_string.html" class="code" title="function [modulation_scheme_string] = n_bpscs_to_string(n_bpscs)">n_bpscs_to_string</a>(PHY0.n_bpscs),PHY0.r_num,PHY0.r_denom);
+0266     semilogy(SIM.snr, avgPER, <span class="string">'DisplayName'</span>, legend_string);
+0267     drawnow; xlabel(<span class="string">'SNR (dB)'</span>); ylabel(<span class="string">'PER'</span>);
+0268     grid on; legend; hold on;
+0269     
+0270     <span class="comment">% Plot throughput</span>
+0271     subplot(1, 2, 2)
+0272     title(sprintf(<span class="string">'\nChannel %i (%s), M=%d'</span>, SIM.channel_model, chan_name, TX.mid));
+0273     plot(SIM.snr, avgTHR(:, i_mcs), <span class="string">'DisplayName'</span>, legend_string );
+0274     drawnow; xlabel(<span class="string">'SNR (dB)'</span>); ylabel(<span class="string">'Throughput (Mbps)'</span>);
+0275     grid on; legend; hold on;
+0276 <span class="keyword">end</span>
+0277 toc</pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

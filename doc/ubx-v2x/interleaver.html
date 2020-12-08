@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of interleaver</title>
+  <meta name="keywords" content="interleaver">
+  <meta name="description" content="INTERLEAVER Bit interleaver">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; interleaver.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>interleaver
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>INTERLEAVER Bit interleaver</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function out = interleaver(in, n_bpscs, n_cbps, ppdu_fmt, n_chan) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">INTERLEAVER Bit interleaver
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="data_tx.html" class="code" title="function [data_wf, data_f_mtx] = data_tx(PHY, pad_len, padding_out, w_beta)">data_tx</a>	DATA_TX Transmitter processing of all DATA OFDM symbols</li><li><a href="ngv_sig_tx.html" class="code" title="function ngv_sig_wf = ngv_sig_tx(PHY, w_beta, n_chan)">ngv_sig_tx</a>	NGV_SIG_TX NGV_SIG message transmitter/parser</li><li><a href="sig_tx.html" class="code" title="function sig_wf = sig_tx(PHY, TX, n_chan)">sig_tx</a>	SIG_TX SIG message transmitter/parser</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function out = interleaver(in, n_bpscs, n_cbps, ppdu_fmt, n_chan)</a>
+0002 <span class="comment">%INTERLEAVER Bit interleaver</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">% Interleaver configuration</span>
+0027 n_col = 16;
+0028 n_row = n_cbps/16;
+0029 <span class="keyword">if</span> (ppdu_fmt == 2)
+0030     <span class="comment">% Interleaver has the same effect as the LDPC tone mapper</span>
+0031     <span class="comment">% Note: LDPC tone mapper might be removed from 802.11bd</span>
+0032     <span class="comment">% TODO: verify if this is still necessary</span>
+0033     <span class="keyword">if</span> (n_chan == 1)
+0034         n_col = 13;
+0035         n_row = 4*n_bpscs; <span class="comment">% D_TM = 4</span>
+0036     <span class="keyword">elseif</span> (n_chan == 2)
+0037         n_col = 18;
+0038         n_row = 6*n_bpscs; <span class="comment">% D_TM = 6</span>
+0039     <span class="keyword">else</span>
+0040         error(<span class="string">'n_chan not supported'</span>)
+0041     <span class="keyword">end</span>
+0042 <span class="keyword">end</span>
+0043 
+0044 <span class="comment">% s-parameter</span>
+0045 s = max(n_bpscs/2, 1);
+0046 
+0047 <span class="comment">% Initialize output</span>
+0048 out = zeros(n_cbps, 1);
+0049 
+0050 <span class="comment">% Input index</span>
+0051 kk = (0:n_cbps - 1);
+0052 
+0053 <span class="comment">% First permutation</span>
+0054 ii = n_row*mod(kk, n_col) + floor(kk/n_col);
+0055 
+0056 <span class="comment">% Second permutation</span>
+0057 jj = s*floor(ii/s) + mod(ii + n_cbps - floor(n_col*ii/n_cbps), s);
+0058 
+0059 <span class="comment">% Interleaver mapping</span>
+0060 out(jj + 1) = in(kk + 1);
+0061 
+0062 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

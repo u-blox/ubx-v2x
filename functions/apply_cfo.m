@@ -1,9 +1,9 @@
 function out = apply_cfo(in, cfo)
 %APPLY_CFO Apply frequency offset to input waveform
 %
-%   Author: Ioannis Sarris, u-blox
-%   email: ioannis.sarris@u-blox.com
-%   February 2019; Last revision: 22-February-2019
+%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+%   contact email: ioannis.sarris@u-blox.com
+%   August 2018; Last revision: 04-December-2020
 
 % Copyright (C) u-blox
 %
@@ -24,7 +24,12 @@ function out = apply_cfo(in, cfo)
 % Purpose: V2X baseband simulation model
 
 % Frequency shift
-f = exp(1j*2*pi*cfo*5.9e9/10e6*(0:length(in) - 1)).';
+f1 = exp(1j*2*pi*cfo*5.9e9/10e6*(0:length(in) - 1)).';
+
+% Repeat shift for each RX chain / RX antenna
+f = repmat(f1,1,size(in,2));
 
 % Apply shift
 out = in.*f;
+
+end

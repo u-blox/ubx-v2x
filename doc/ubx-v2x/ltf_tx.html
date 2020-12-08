@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of ltf_tx</title>
+  <meta name="keywords" content="ltf_tx">
+  <meta name="description" content="LTF_TX Generates LTF preamble">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html v1.5 &copy; 2003-2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+</head>
+<body>
+<a name="_top"></a>
+<div><a href="../index.html">Home</a> &gt;  <a href="index.html">ubx-v2x</a> &gt; ltf_tx.m</div>
+
+<!--<table width="100%"><tr><td align="left"><a href="../index.html"><img alt="<" border="0" src="../left.png">&nbsp;Master index</a></td>
+<td align="right"><a href="index.html">Index for ubx-v2x&nbsp;<img alt=">" border="0" src="../right.png"></a></td></tr></table>-->
+
+<h1>ltf_tx
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>LTF_TX Generates LTF preamble</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function ltf_wf = ltf_tx(w_beta, n_chan) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">LTF_TX Generates LTF preamble
+
+   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox
+   contact email: ioannis.sarris@u-blox.com
+   August 2018; Last revision: 04-December-2020</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="dot11_ifft.html" class="code" title="function out = dot11_ifft(in, n_fft)">dot11_ifft</a>	DOT11_IFFT 802.11 IFFT</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="fine_sync.html" class="code" title="function [f_idx, f_cfo] = fine_sync(in, c_idx, n_chan)">fine_sync</a>	FINE_SYNC Fine synchronization</li><li><a href="sim_tx.html" class="code" title="function [tx_wf, data_f_mtx, data_msg, PHY] = sim_tx(TX)">sim_tx</a>	SIM_TX High-level transmitter function</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function ltf_wf = ltf_tx(w_beta, n_chan)</a>
+0002 <span class="comment">%LTF_TX Generates LTF preamble</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">%   Authors: Ioannis Sarris, Sebastian Schiessl, u-blox</span>
+0005 <span class="comment">%   contact email: ioannis.sarris@u-blox.com</span>
+0006 <span class="comment">%   August 2018; Last revision: 04-December-2020</span>
+0007 
+0008 <span class="comment">% Copyright (C) u-blox</span>
+0009 <span class="comment">%</span>
+0010 <span class="comment">% All rights reserved.</span>
+0011 <span class="comment">%</span>
+0012 <span class="comment">% Permission to use, copy, modify, and distribute this software for any</span>
+0013 <span class="comment">% purpose without fee is hereby granted, provided that this entire notice</span>
+0014 <span class="comment">% is included in all copies of any software which is or includes a copy</span>
+0015 <span class="comment">% or modification of this software and in all copies of the supporting</span>
+0016 <span class="comment">% documentation for such software.</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">% THIS SOFTWARE IS BEING PROVIDED &quot;AS IS&quot;, WITHOUT ANY EXPRESS OR IMPLIED</span>
+0019 <span class="comment">% WARRANTY. IN PARTICULAR, NEITHER THE AUTHOR NOR U-BLOX MAKES ANY</span>
+0020 <span class="comment">% REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY</span>
+0021 <span class="comment">% OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">% Project: ubx-v2x</span>
+0024 <span class="comment">% Purpose: V2X baseband simulation model</span>
+0025 
+0026 <span class="comment">% Store this as a persistent variable to avoid recalculation</span>
+0027 <span class="keyword">persistent</span> ltf_wf_10 ltf_wf_20
+0028 
+0029 <span class="keyword">if</span> isempty(ltf_wf_10)
+0030     <span class="comment">% LTF f-domain represenation (including DC-subcarrier &amp; guard bands)</span>
+0031     ltf_f = [zeros(1,6), 1 1 -1 -1 1 1 -1 1 -1 1 1 1 1 1 1 -1 -1 1 1 -1 1 -1 1 1 1 1 0 <span class="keyword">...</span>
+0032         1 -1 -1 1 1 -1 1 -1 1 -1 -1 -1 -1 -1 1 1 -1 -1 1 -1 1 -1 1 1 1 1, zeros(1, 5)].';
+0033     
+0034     <span class="comment">% Apply spectral shaping window</span>
+0035     ltf_f = ltf_f.*kaiser(64, w_beta);
+0036     
+0037     <span class="comment">% Base LTF waveform</span>
+0038     ltf_wf_base = 1/sqrt(52)*<a href="dot11_ifft.html" class="code" title="function out = dot11_ifft(in, n_fft)">dot11_ifft</a>(ltf_f, 64);
+0039     
+0040     <span class="comment">% Append CP</span>
+0041     ltf_wf_10 = [ltf_wf_base(33:64); ltf_wf_base; ltf_wf_base];
+0042 <span class="keyword">end</span>
+0043 
+0044 <span class="keyword">if</span> isempty(ltf_wf_20)
+0045     n_chan_temp = 2;
+0046     <span class="comment">% 10 MHz LTF in f-domain</span>
+0047     ltf_f10 = [zeros(1,6), 1 1 -1 -1 1 1 -1 1 -1 1 1 1 1 1 1 -1 -1 1 1 -1 1 -1 1 1 1 1 0 <span class="keyword">...</span>
+0048         1 -1 -1 1 1 -1 1 -1 1 -1 -1 -1 -1 -1 1 1 -1 -1 1 -1 1 -1 1 1 1 1, zeros(1, 5)].';
+0049     
+0050     <span class="comment">% Transmit LTF in both 10 MHz subchannels, apply tone rotation to upper channel</span>
+0051     ltf_f20 = [ltf_f10; 1j*ltf_f10];
+0052     
+0053     <span class="comment">% Apply spectral shaping window</span>
+0054     ltf_f = ltf_f20(1:64*n_chan_temp).*kaiser(64*n_chan_temp, w_beta);
+0055     
+0056     <span class="comment">% Base LTF waveform</span>
+0057     ltf_wf_base = 1/sqrt(52*n_chan_temp)*<a href="dot11_ifft.html" class="code" title="function out = dot11_ifft(in, n_fft)">dot11_ifft</a>(ltf_f, 64*n_chan_temp);
+0058     
+0059     <span class="comment">% Append CP</span>
+0060     ltf_wf_20 = [ltf_wf_base(32*n_chan_temp+1:64*n_chan_temp); ltf_wf_base; ltf_wf_base];
+0061 <span class="keyword">end</span>
+0062 
+0063 <span class="comment">% Select LTF based on 10 / 20 MHz channel</span>
+0064 <span class="keyword">if</span> (n_chan == 1)
+0065     ltf_wf = ltf_wf_10;
+0066 <span class="keyword">elseif</span> (n_chan == 2)
+0067     ltf_wf = ltf_wf_20;
+0068 <span class="keyword">else</span>
+0069     error(<span class="string">'not supported'</span>)
+0070 <span class="keyword">end</span>
+0071 
+0072 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Mon 07-Dec-2020 10:27:25 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" title="Matlab Documentation in HTML">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

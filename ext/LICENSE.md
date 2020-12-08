@@ -1,0 +1,1 @@
+This folder contains functions from 3rd parties and to which, u-blox claims no rights
