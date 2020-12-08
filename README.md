@@ -9,7 +9,7 @@ The goal of ubx-v2x is to stimulate research on algorithms for current and next-
 
 ## MEX Acceleration (optional)
 
-Simulation performance can be significantly improved by using (compiled) MEX files for the high-level transmitter `sim_tx` and receiver `sim_rx` functions. These functions and the ones below them have been written in a way which enables code generation as described [here](https://www.mathworks.com/help/comm/ug/code-generation-from-matlab.html).
+Simulation performance can be significantly improved by using (compiled) MEX files for the high-level transmitter `sim_tx` and receiver `sim_rx` functions. These functions and the ones below them have been written in a way which enables code generation.
 
 Compilation of the MEX files for your platform can be performed by executing `codegen_script` from the top-level directory. Once the MEX files are created inside the `mex` folder, MEX-acceleration can be enabled by setting `SIM.use_mex = true;` at the top of `batch_sim`.
 
